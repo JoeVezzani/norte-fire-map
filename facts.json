@@ -61,6 +61,10 @@
   [
    "1:37 PM",
    "Order zones restated: SCL12, SCL13, SJC04, SJC05, SJC10 (OC alert)."
+  ],
+  [
+   "1:29 PM",
+   "Hard road closure requested on I-5 from San Juan Creek Rd to Camino De Los Mares (radio traffic via Watch Duty)."
   ]
  ],
  "order_zones": {
@@ -95,7 +99,8 @@
   "label": "CBS LA live coverage"
  },
  "closures": [
-  "I-5 both directions south of San Clemente (Henderson Fire, Camp Pendleton)",
+  "I-5 hard closure requested from San Juan Creek Rd to Camino De Los Mares (radio traffic 1:29 PM)",
+  "I-5 closed both directions south of San Clemente (Henderson Fire, Camp Pendleton)",
   "Prima Deshecha Landfill closed"
  ]
 }

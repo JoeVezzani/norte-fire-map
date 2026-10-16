@@ -8,6 +8,21 @@ PT = datetime.timezone(datetime.timedelta(hours=-7))
 osm = json.load(open('osm.json'))['elements']
 posts = json.load(open('posts_store.json'))
 facts = json.load(open('facts.json'))
+try: wd = json.load(open('wd.json'))
+except Exception: wd = {'event':{},'data':{},'reports':[],'photos':[]}
+def _strip(h): return re.sub(r'<[^>]+>','',html.unescape(h or '')).strip()
+def _pt(iso):
+    try: return datetime.datetime.fromisoformat(iso.replace('Z','+00:00')).astimezone(PT).strftime('%-I:%M %p')
+    except Exception: return ''
+if wd.get('data',{}).get('acreage'): facts['acres']=str(wd['data']['acreage'])
+if wd.get('data',{}).get('containment') is not None: facts['containment']=f"{wd['data']['containment']}%"
+elif not facts.get('containment'): facts['containment']='0%'
+_wd_orders=[z.strip() for z in (wd.get('data',{}).get('evacuation_orders') or '').split(',') if z.strip()]
+for z in _wd_orders: facts.setdefault('order_zones',{}).setdefault(z,'Watch Duty / OCFA')
+_wd_warn=[z.strip() for z in (wd.get('data',{}).get('evacuation_warnings') or '').split(',') if z.strip()]
+for z in _wd_warn: facts.setdefault('warning_zones',{}).setdefault(z,'Watch Duty / OCFA')
+wd_reports=[(_pt(r['t']),_strip(r['msg'])) for r in wd.get('reports',[]) if r.get('msg')]
+wd_photos=[p for p in wd.get('photos',[]) if p.get('media')]
 try: wind = json.load(open('wind.json'))
 except Exception: wind = {'obs':[],'hourly':[],'fetched':''}
 # street mentions in the last 90 minutes of posts
@@ -211,12 +226,15 @@ nav.tabs{{display:none}}
 <h2>Predicted spread, physics estimate <small style="text-transform:none;letter-spacing:0;font-weight:500">· <a href="methodology.html">how it is computed, with the math</a></small></h2>
 <div class="stats" id="spreadstats"><div class="stat"><b>--</b><span>head speed, mph</span></div><div class="stat"><b>--</b><span>1 hr run, miles</span></div><div class="stat"><b>--</b><span>flame length, ft</span></div></div>
 <p class="sub" id="spreadnote">Computing from live wind…</p>
-<p class="sub">Orange bands on the map are the 1, 2 and 3 hour envelopes at the current sustained wind. The dashed band is the 1 hour envelope at gust speed. Rothermel surface fire model, Scott and Burgan SH5 shrub fuel, Anderson ellipse, slope 25%, containment treated as 0%. No spotting, no suppression, no wind shifts. <a href="methodology.html">Full equations, inputs and sources.</a> Front assumed: {html.escape(facts.get('front_note',''))}.</p>
+<p class="sub">Orange bands on the map are the 1, 2 and 3 hour envelopes at the current sustained wind. The dashed band is the 1 hour envelope at gust speed. Rothermel surface fire model, Scott and Burgan SH5 shrub fuel, Anderson ellipse, slope 25%, containment treated as 0%, clipped at the coastline. No spotting, no suppression, no wind shifts. <a href="methodology.html">Full equations, inputs and sources.</a> Front assumed: {html.escape(facts.get('front_note',''))}.</p>
 <p class="sub" style="color:#f3d9a4">These shapes are a rough estimate of where the fire could go if nothing stops it, not an official map. Follow OCFA, CAL FIRE and the Sheriff.</p>
 </section>
 <section class="leg"><h2>Streets in the updates</h2><div id="legend"></div><p class="sub">Tap a street to zoom to it.</p>
 {('<h3 style="margin-top:14px">Mentioned in posts, last 90 min</h3><ul class="mention">'+''.join(f'<li>{html.escape(n)}<small>{c}×'+('' if any(n.lower()==v[0].lower() for v in STREETS.values()) else ' · not on map yet')+'</small></li>' for n,c in mentions)+'</ul>') if mentions else ''}
 </section>
+<section><h2>Watch Duty incident reports <small style="text-transform:none;letter-spacing:0">· <a href="https://app.watchduty.org/i/124958" target="_blank" rel="noopener">open Watch Duty</a></small></h2>
+<ul class="tl">{''.join(f'<li><time>{t}</time><span>{html.escape(m)}</span></li>' for t,m in wd_reports) or '<li><span class="sub">No reports captured yet.</span></li>'}</ul>
+<p class="sub">Verified reports from Watch Duty's reporters, mirrored here as of {html.escape(_pt(wd.get('fetched','')+':00Z') if wd.get('fetched') else '')}{(' · incident address: '+html.escape(wd['event'].get('address') or '')) if wd.get('event',{}).get('address') else ''}.</p></section>
 <section><h2>Timeline (PT, newest first)</h2><ul class="tl">{timeline}</ul></section>
 <section><h2>Official sources</h2><div class="links">
 <a href="https://protect.genasys.com/search" target="_blank" rel="noopener">Genasys Protect <small>zones by address</small></a>
@@ -253,18 +271,18 @@ ORDER.forEach(g=>{{const names=[...(byGroup[g]||[])].sort();if(!names.length)ret
  names.forEach(n=>{{const li=document.createElement('li');li.textContent=n;li.onclick=()=>{{document.body.className='tab-map';tabs('map');map.invalidateSize();map.fitBounds(L.featureGroup(groups[n]).getBounds().pad(.5));groups[n].forEach(l=>l.openTooltip());}};ul.appendChild(li);}});leg.appendChild(ul);}});
 if(MISS.length){{const ul=document.createElement('ul');MISS.forEach(n=>{{const li=document.createElement('li');li.className='miss';li.innerHTML=`${{n}}<small>not in map data yet</small>`;ul.appendChild(li);}});leg.appendChild(ul);}}
 // permanent labels on the named streets
-['Avenida Calita','Via La Mirada','Via De Agua','Calle Esperanza','Avenida California','Camino Las Ramblas','Portico Del Norte','Avenida Placida'].forEach(n=>{{const ls=groups[n];if(!ls)return;const c=L.featureGroup(ls).getBounds().getCenter();L.marker(c,{{opacity:0,interactive:false}}).addTo(map).bindTooltip(n,{{permanent:true,className:'lbl',direction:'top',offset:[0,-4]}});}});
+const lblLayer=L.layerGroup();['Avenida Calita','Via La Mirada','Via De Agua','Calle Esperanza','Avenida California','Camino Las Ramblas','Portico Del Norte','Avenida Placida'].forEach(n=>{{const ls=groups[n];if(!ls)return;const c=L.featureGroup(ls).getBounds().getCenter();lblLayer.addLayer(L.marker(c,{{opacity:0,interactive:false}}).bindTooltip(n,{{permanent:true,className:'lbl',direction:'top',offset:[0,-4]}}));}});const syncLbl=()=>{{if(map.getZoom()>=15){{if(!map.hasLayer(lblLayer))lblLayer.addTo(map);}}else if(map.hasLayer(lblLayer))map.removeLayer(lblLayer);}};map.on('zoomend',syncLbl);syncLbl();
 
 // ---- live county evacuation zones (OC Public Works feature layer)
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}}[c]));
 const ZL='https://services.arcgis.com/UXmFoWC7yDHcDN5Q/arcgis/rest/services/Know_Your_Evacuation_Areas_OC_VIew/FeatureServer/0/query';
 const zoneLayer=L.geoJSON(null,{{style:f=>{{const t=effType(f.properties);const o=/order/i.test(t),w=/warning/i.test(t);return{{color:o?'#e5484d':w?'#f5b400':'#6b7684',weight:o||w?2:1,fillColor:o?'#e5484d':w?'#f5b400':'#000',fillOpacity:o?.22:w?.18:0,dashArray:o||w?null:'3 4'}};}},
  onEachFeature:(f,l)=>{{const p=f.properties;l.bindTooltip(`<b>${{esc(p.Evac_Area)}}</b><br>${{esc(effType(p))}}`,{{className:'lbl',sticky:true}});}}}}).addTo(map);
-let zoneStatus={{}};const spreadLayer=L.layerGroup().addTo(map);
+let zoneStatus={{}};const spreadLayer=L.layerGroup().addTo(map);const photoLayer=L.layerGroup().addTo(map);
 const OVR_ORDER={json.dumps(facts.get('order_zones',{}))},OVR_WARN={json.dumps(facts.get('warning_zones',{}))};
 const norm=z=>String(z||'').replace(/\\s+/g,'').toUpperCase();
 function effType(p){{const z=norm(p.Evac_Area),t=p.Evac_Type||'';if(/order/i.test(t))return t;const o=Object.keys(OVR_ORDER).find(k=>norm(k)===z);if(o)return 'Evacuation Order (per '+OVR_ORDER[o]+')';if(/warning/i.test(t))return t;const w=Object.keys(OVR_WARN).find(k=>norm(k)===z);if(w)return 'Evacuation Warning (per '+OVR_WARN[w]+')';return t;}}
-L.control.layers({{'Street map':street,'Satellite':sat}},{{'County evacuation zones (live)':zoneLayer,'Predicted spread (1/2/3 h)':spreadLayer,'Streets':gl,'Radio-traffic sketch':evacL}},{{collapsed:window.innerWidth<900,position:'topright'}}).addTo(map);
+L.control.layers({{'Street map':street,'Satellite':sat}},{{'County evacuation zones (live)':zoneLayer,'Predicted spread (1/2/3 h)':spreadLayer,'Photos (Watch Duty users)':photoLayer,'Streets':gl,'Radio-traffic sketch':evacL}},{{collapsed:true,position:'topright'}}).addTo(map);
 
 async function loadZones(){{try{{
  const u=ZL+'?where=1%3D1&geometry=-117.75,33.40,-117.55,33.55&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=Evac_Area,Evac_Type,City,Area_Desc&returnGeometry=true&outSR=4326&f=geojson&_='+Date.now();
@@ -285,13 +303,18 @@ async function liveWind(){{try{{const r=await fetch('https://api.weather.gov/sta
  const w=document.querySelector('#windnow .w');if(w)w.innerHTML=`<b>${{Math.round(o.mph)}}<small> mph</small></b><span>${{o.gust?'gusts '+Math.round(o.gust)+' mph · ':''}}from ${{Math.round(o.dir)}}° · San Clemente Pier</span>`;
  document.getElementById('windnote').textContent='Observed '+new Date(o.time).toLocaleTimeString([],{{hour:'numeric',minute:'2-digit'}})+' at San Clemente Pier. Wind is pushing the fire '+(o.dir>=45&&o.dir<=135?'west/southwest toward I-5 and the coast':'downwind')+'.';}}catch(e){{}}}}
 liveWind();setInterval(liveWind,300000);
+// ---- Watch Duty origin + user photos
+const WDE={json.dumps({k:wd.get('event',{}).get(k) for k in ('lat','lng','address')})},WDP={json.dumps([{'lat':p['lat'],'lng':p['lng'],'t':_pt(p['t']),'u':p['media'][0]} for p in wd_photos if p['media'][0].startswith('https://images.watchduty.org/')][:30])};
+if(WDE.lat){{L.marker([WDE.lat,WDE.lng],{{icon:L.divIcon({{className:'',html:'<div style="width:18px;height:18px;border-radius:50%;background:#b91c1c;border:3px solid #fff;box-shadow:0 0 0 4px rgba(185,28,28,.35)"></div>',iconSize:[18,18],iconAnchor:[9,9]}})}}).addTo(map).bindTooltip('Reported origin: '+esc(WDE.address||''),{{className:'lbl'}});}}
+WDP.forEach(p=>photoLayer.addLayer(p=>L.circleMarker([p.lat,p.lng],{{radius:6,color:'#fff',weight:1.5,fillColor:'#8ec5ff',fillOpacity:.95}}).bindPopup(`<a href="${{esc(p.u)}}" target="_blank" rel="noopener"><img src="${{esc(p.u)}}" alt="User photo" style="width:240px;max-width:70vw;border-radius:6px;display:block"></a><div style="font:12px Inter,sans-serif;margin-top:4px;color:#333">User photo via Watch Duty · ${{esc(p.t)}}</div>`)));
 // ---- predicted spread isochrones
 const FRONT={json.dumps(facts.get('front',[]))};
 function drawSpread(o){{try{{if(!window.spreadModel||!FRONT.length||!o)return;const base={{windFromDeg:o.dir??95,rhPct:o.rh??20,tempF:o.tempF??92}};
  const m=spreadModel({{...base,windMph:Math.max(5,o.mph||15)}}),g=spreadModel({{...base,windMph:Math.max(o.gust||0,o.mph||15)}});
  spreadLayer.clearLayers();
- const iso=isochrones(FRONT,m,[3,2,1]);iso.forEach(i=>L.polygon(i.polygon,{{color:'#f76b15',weight:1,fillColor:'#f76b15',fillOpacity:i.hour===1?.22:i.hour===2?.13:.07,interactive:true}}).bindTooltip(`+${{i.hour}} h at ${{Math.round(o.mph)}} mph sustained · head run ${{i.headRunMiles.toFixed(1)}} mi · see methodology`,{{className:'lbl',sticky:true}}).addTo(spreadLayer));
- if(o.gust&&o.gust>o.mph){{const gi=isochrones(FRONT,g,[1])[0];L.polygon(gi.polygon,{{color:'#ffb366',weight:2,dashArray:'5 5',fill:false}}).bindTooltip(`+1 h if gusts of ${{Math.round(o.gust)}} mph hold · head run ${{gi.headRunMiles.toFixed(1)}} mi`,{{className:'lbl',sticky:true}}).addTo(spreadLayer);}}
+ const COAST=[[33.462,-117.705],[33.449,-117.672],[33.430,-117.640],[33.416,-117.618],[33.395,-117.590]];const clip=poly=>{{let out=poly;for(let i=0;i<COAST.length-1;i++){{const a=COAST[i],b=COAST[i+1];const side=p=>(b[1]-a[1])*(p[0]-a[0])-(b[0]-a[0])*(p[1]-a[1]);const res=[];for(let k=0;k<out.length;k++){{const P=out[k],Q=out[(k+1)%out.length],sp=side(P),sq=side(Q);if(sp>=0)res.push(P);if((sp>=0)!==(sq>=0)){{const t=sp/(sp-sq);res.push([P[0]+t*(Q[0]-P[0]),P[1]+t*(Q[1]-P[1])]);}}}}out=res;if(!out.length)break;}}return out;}};
+ const iso=isochrones(FRONT,m,[3,2,1]).map(i=>({{...i,polygon:clip(i.polygon)}}));iso.forEach(i=>L.polygon(i.polygon,{{color:'#f76b15',weight:1,fillColor:'#f76b15',fillOpacity:i.hour===1?.22:i.hour===2?.13:.07,interactive:true}}).bindTooltip(`+${{i.hour}} h at ${{Math.round(o.mph)}} mph sustained · head run ${{i.headRunMiles.toFixed(1)}} mi · see methodology`,{{className:'lbl',sticky:true}}).addTo(spreadLayer));
+ if(o.gust&&o.gust>o.mph){{const gi=isochrones(FRONT,g,[1])[0];gi.polygon=clip(gi.polygon);L.polygon(gi.polygon,{{color:'#ffb366',weight:2,dashArray:'5 5',fill:false}}).bindTooltip(`+1 h if gusts of ${{Math.round(o.gust)}} mph hold · head run ${{gi.headRunMiles.toFixed(1)}} mi`,{{className:'lbl',sticky:true}}).addTo(spreadLayer);}}
  FRONT.forEach(p=>L.circleMarker(p,{{radius:4,color:'#fff',weight:1,fillColor:'#b91c1c',fillOpacity:1}}).addTo(spreadLayer));
  const st=document.querySelectorAll('#spreadstats b');st[0].textContent=m.headRosMph.toFixed(1);st[1].textContent=iso.find(i=>i.hour===1).headRunMiles.toFixed(1);st[2].textContent=Math.round(m.flameLengthFt);
  document.getElementById('spreadnote').textContent=`Wind from ${{Math.round(base.windFromDeg)}}° at ${{Math.round(o.mph)}} mph${{o.gust?', gusts '+Math.round(o.gust):''}} → fire pushed toward ${{Math.round((base.windFromDeg+180)%360)}}°. ${{m.note}}. Gust case head speed ${{g.headRosMph.toFixed(1)}} mph.`;
