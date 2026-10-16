@@ -151,6 +151,9 @@ for _p in sorted(posts,key=lambda p:-p.get('post_created',0)):
     for lab in hit:
         lst=street_posts.setdefault(lab,[])
         if len(lst)<6: lst.append({'t':datetime.datetime.fromtimestamp(_p.get('post_created',0),PT).strftime('%-I:%M %p'),'who':(_p.get('influencer_name') or re.sub(r'https?://(www\.)?(x|twitter)\.com/([^/]+)/.*',r'@\3',html.unescape(_l)))[:30],'link':html.unescape(_l),'text':_t[:140],'kind':'video' if _p.get('post_type')=='youtube-video' or 'video' in _tl or 'footage' in _tl or 'live' in _tl else 'post'})
+zones_txt=', '.join(sorted(facts.get('order_zones',{}).keys()))
+guidance=open('guidance.html').read().replace('{ZONES}',html.escape(zones_txt))
+guidance2=open('guidance2.html').read()
 built = now.strftime('%b %-d, %Y, %-I:%M %p PT')
 
 def li(items): return ''.join(f'<li>{i}</li>' for i in items)
@@ -201,7 +204,7 @@ h2{{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em
 .notice a{{color:#ffd68a}}
 .stats{{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}}
 .stat{{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px}}
-.stat b{{display:block;font-family:"Inter Tight",sans-serif;font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}}.stat span{{font-size:11px;color:var(--muted)}}
+.stat b{{display:block;font-family:"Inter Tight",sans-serif;font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}}.stat span{{font-size:12.5px;color:var(--muted)}}
 .zones{{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}}.zones span{{background:#2a1215;border:1px solid #5a1f24;color:#ffb3b6;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:500}}
 .sub{{color:var(--muted);font-size:13px;margin:8px 0 0}}
 .leg h3{{font-size:13px;font-weight:600;margin:12px 0 4px;display:flex;align-items:center;gap:8px}}
@@ -222,14 +225,15 @@ h2{{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em
 .leaflet-bar a{{background:var(--panel);color:var(--fg);border-color:var(--line)}}
 .leaflet-control-attribution{{background:rgba(11,13,16,.7)!important;color:var(--muted)!important;font-size:10px}}.leaflet-control-attribution a{{color:var(--muted)!important}}
 #addr{{display:grid;grid-template-columns:1fr auto auto;gap:6px}}#addr input{{min-width:0;background:var(--card);border:1px solid var(--line);border-radius:8px;color:var(--fg);padding:10px 12px;font:15px Inter,sans-serif}}#addr input:focus{{outline:2px solid #8ec5ff;outline-offset:-1px}}
-#addr button{{background:var(--red);color:#fff;border:0;border-radius:8px;padding:0 14px;font:600 14px Inter,sans-serif;cursor:pointer}}#addr #geo{{background:var(--card);color:var(--fg);border:1px solid var(--line)}}
+#addr button{{background:#c62a2f;color:#fff;border:0;border-radius:8px;padding:0 14px;font:600 14px Inter,sans-serif;cursor:pointer}}#addr #geo{{background:var(--card);color:var(--fg);border:1px solid var(--line)}}
 .res{{margin-top:10px;padding:12px 14px;border-radius:10px;font-size:14px;border:1px solid var(--line);background:var(--card)}}.res b{{display:block;font-family:"Inter Tight",sans-serif;font-size:18px;margin-bottom:2px}}
-.res.order{{background:#3a1215;border-color:#8a2a30}}.res.order b{{color:#ff8a8f}}.res.warn{{background:#3a2d08;border-color:#8a6a12}}.res.warn b{{color:#ffd45c}}.res.ok{{background:#0f2a1a;border-color:#1f6b3a}}.res.ok b{{color:#6fdc8c}}
+.res.order{{background:#3a1215;border-color:#8a2a30}}.res.order b{{color:#ff8a8f}}.res.warn{{background:#3a2d08;border-color:#8a6a12}}.res.warn b{{color:#ffd45c}}.res.ok{{background:#1a2233;border-color:#2c3e5a}}.res.ok b{{color:#bcd3f5}}
 .zones span.warn{{background:#2a2208;border-color:#5a4a12;color:#ffd45c}}
-#windnow{{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}}.w{{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px}}.w b{{display:block;font-family:"Inter Tight",sans-serif;font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}}.w b small{{font-size:12px;color:var(--muted);font-weight:500}}.w span{{font-size:11.5px;color:var(--muted);display:block;line-height:1.35}}
+#windnow{{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}}.w{{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px}}.w b{{display:block;font-family:"Inter Tight",sans-serif;font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}}.w b small{{font-size:12px;color:var(--muted);font-weight:500}}.w span{{font-size:12.5px;color:var(--muted);display:block;line-height:1.35}}
 .hourly{{display:flex;gap:6px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none}}.hourly span{{flex:none;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:12px;white-space:nowrap}}.hourly em{{display:block;font-style:normal;color:var(--muted);font-size:11px}}
 .mention{{list-style:none;margin:0;padding:0}}.mention li{{display:flex;padding:5px 0 5px 20px;font-size:14px;color:#cfd6de}}.mention li small{{margin-left:auto;color:var(--muted);font-size:12px}}
 .windarrow{{background:rgba(11,13,16,.85);color:#fff;border-radius:8px;padding:8px 10px;font:600 12px Inter,sans-serif;display:flex;align-items:center;gap:8px}}.windarrow svg{{width:28px;height:28px}}
+.act{{background:#141921;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:12px 0}}.act h2{{color:#fff;text-transform:none;letter-spacing:0;font-size:15px;margin-bottom:6px}}.act h3{{font-size:13px;margin:12px 0 4px;color:#fff}}.steps{{margin:6px 0;padding-left:20px;font-size:13.5px;color:#cfd6de}}.steps li{{margin:4px 0}}#leave{{border-color:#8a2a30;background:#2a1215}}#es{{border-color:#5a4a12}}
 nav.tabs{{display:none}}
 @media (max-width:900px){{
  .layout{{display:block;height:auto}}
@@ -243,18 +247,20 @@ nav.tabs{{display:none}}
  header h1{{font-size:15px}}header .upd{{display:none}}
 }}
 </style></head><body class="tab-map">
+<div id="stale" hidden style="background:#3a2d08;color:#ffd45c;padding:8px 16px;font-size:13px;border-bottom:1px solid #8a6a12"></div>
 <header><h1><b>Norte Fire</b> evacuation street map</h1><span class="upd">Updated {built}</span></header>
 <div class="layout">
-<div id="map" role="img" aria-label="Map of Norte Fire streets in San Juan Capistrano and San Clemente"></div>
+<a href="#leave" class="skip" style="position:absolute;left:-9999px">Skip map</a><div id="map" aria-label="Interactive map. The same information is listed in text in the panel."></div>
 <aside class="ic-dark">
 <div class="notice" style="display:flex;gap:10px;align-items:flex-start"><span class="hi" data-ic="danger" data-col="#f5b400" style="flex:none;width:18px;height:18px;margin-top:2px"></span><span>Informational page, not an official source. Check your address on <a href="https://ocpw.maps.arcgis.com/apps/instant/lookup/index.html?appid=61efa4f48aaf42638d7fe59c395b4865&amp;center=-117.6429%3B33.4887&amp;level=12" target="_blank" rel="noopener">the OC evacuation zone map</a> or <a href="https://protect.genasys.com/search" target="_blank" rel="noopener">Genasys Protect</a> and follow <a href="https://x.com/OCFireAuthority" target="_blank" rel="noopener">@OCFireAuthority</a>. If you are told to leave, leave.</span></div>
+{guidance}
 <section class="check">
 <h2><span class="hi" data-ic="check" data-col="#1f8a4c"></span>Am I in an evacuation zone?</h2>
-<form id="addr" autocomplete="off" data-1p-ignore><input id="q" type="search" name="nf-address" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other" enterkeyhint="search" placeholder="Street address (e.g. 27000 Via De Agua)" aria-label="Street address"><button type="submit">Check</button><button type="button" id="geo" title="Use my location">Locate me</button></form>
-<div id="res" class="res" hidden></div>
+<form id="addr" autocomplete="off" data-1p-ignore><input id="q" type="search" name="nf-address" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other" enterkeyhint="search" placeholder="Street address (e.g. 27000 Via De Agua)" aria-label="Street address"><button type="submit">Check</button><button type="button" id="geo" aria-label="Use my location to check my zone">Locate me</button></form>
+<div id="res" class="res" role="status" aria-live="polite" hidden></div>
 <p class="sub">Checks the live Orange County evacuation zone layer (OC Public Works). Zones are updated by OCFA and the Sheriff; this page just reads them.</p>
 </section>
-{('<section><h2><span class="hi" data-ic="shelter" data-col="#1f8a4c"></span>Evacuation shelters (OCFA)</h2><div class="links">'+''.join(f'<a href="https://maps.apple.com/?daddr={urllib.parse.quote(sh["addr"])}" target="_blank" rel="noopener">{html.escape(sh["name"])}<small>{html.escape(sh["addr"])} · directions</small></a>' for sh in facts.get('shelters',[]))+'</div></section>') if facts.get('shelters') else ''}
+{('<section><h2><span class="hi" data-ic="shelter" data-col="#1f8a4c"></span>Evacuation shelters (OCFA)</h2><div class="links">'+''.join(f'<a href="https://maps.apple.com/?daddr={urllib.parse.quote(sh["addr"])}" target="_blank" rel="noopener">{html.escape(sh["name"])}<small>{html.escape(sh["addr"])} · directions</small></a>' for sh in facts.get('shelters',[]))+'</div><p class="sub">Opened by OCFA at 2:06 PM. Bring medicines, ID and chargers. Pets: check with the shelter before you arrive. If you need a ride, call 911.</p></section>') if facts.get('shelters') else ''}
 {('<section><h2><span class="hi" data-ic="school" data-col="#2f6feb"></span>Schools</h2><p class="sub" style="margin:0">'+html.escape(facts['schools']['note'])+'</p><div class="zones" style="margin-top:8px">'+''.join(f'<span style="background:#1a2233;border-color:#2c3e5a;color:#bcd3f5">{html.escape(x)}</span>' for x in facts['schools']['list'])+'</div></section>') if facts.get('schools') else ''}
 <section>
 <h2><span class="hi" data-ic="danger" data-col="#e5484d"></span>Status</h2>
@@ -274,20 +280,22 @@ nav.tabs{{display:none}}
 <div id="aq" class="sub" style="margin-top:10px">Air quality: loading…</div>
 <p class="sub">Forecast: NWS San Diego hourly grid. Observations: NWS stations. Temperatures {wind['obs'][0]['tempF'] if wind['obs'] and wind['obs'][0].get('tempF') else '--'}°F, humidity {wind['obs'][0]['rh'] if wind['obs'] and wind['obs'][0].get('rh') else '--'}%.</p>
 </section>
+{guidance2}
 <section>
-<h2><span class="hi" data-ic="origin" data-col="#f76b15"></span>Predicted spread, physics estimate <small style="text-transform:none;letter-spacing:0;font-weight:500">· <a href="methodology.html">how it is computed, with the math</a></small></h2>
-<div class="stats" id="spreadstats"><div class="stat"><b>--</b><span>head speed, mph</span></div><div class="stat"><b>--</b><span>1 hr run, miles</span></div><div class="stat"><b>--</b><span>flame length, ft</span></div></div>
+<h2><span class="hi" data-ic="origin" data-col="#f76b15"></span>Wind-driven spread guide (not a forecast) <small style="text-transform:none;letter-spacing:0;font-weight:500">· <a href="methodology.html">how it is computed, with the math</a></small></h2>
+<div class="stats" id="spreadstats"><div class="stat"><b>--</b><span>rough head speed, mph</span></div><div class="stat"><b>--</b><span>rough 1 hr run, miles</span></div><div class="stat"><b>--</b><span>rough flame length, ft</span></div></div>
 <p class="sub" id="spreadnote">Computing from live wind…</p>
-<p class="sub">Orange bands on the map are the 1, 2 and 3 hour envelopes at the current sustained wind. The dashed band is the 1 hour envelope at gust speed. Rothermel surface fire model, Scott and Burgan SH5 shrub fuel, Anderson ellipse, slope 25%, containment treated as 0%, clipped at the coastline. No spotting, no suppression, no wind shifts. <a href="methodology.html">Full equations, inputs and sources.</a> Front assumed: {html.escape(facts.get('front_note',''))}.</p>
+<p class="sub">The gray outlines on the map show only which way today's wind would push the fire and roughly how fast, if nothing stopped it. <b>They are not a forecast and not an evacuation map.</b> Embers can start new fires a mile or more ahead of the flames, so areas outside the outlines are not safe. The starting points were set by hand from reports at {html.escape(datetime.datetime.fromisoformat(facts.get("front_time","2026-10-16T13:02:00-07:00")).strftime("%-I:%M %p"))} and may be out of date. Evacuation decisions come only from OCFA and the Sheriff. Rothermel surface fire model, Scott and Burgan SH5 shrub fuel, Anderson ellipse, slope 25%, containment treated as 0%, clipped at the coastline. No spotting, no suppression, no wind shifts. <a href="methodology.html">Full equations, inputs and sources.</a> Front assumed: {html.escape(facts.get('front_note',''))}.</p>
 <p class="sub" style="color:#f3d9a4">These shapes are a rough estimate of where the fire could go if nothing stops it, not an official map. Follow OCFA, CAL FIRE and the Sheriff.</p>
 </section>
 <section class="leg"><h2><span class="hi" data-ic="locate" data-col="#8ec5ff"></span>Streets in the updates</h2><div id="legend"></div><p class="sub">Tap a street to zoom to it.</p>
 {('<h3 style="margin-top:14px">Mentioned in posts, last 90 min</h3><ul class="mention">'+''.join(f'<li>{html.escape(n)}<small>{c}×'+('' if any(n.lower()==v[0].lower() for v in STREETS.values()) else ' · not on map yet')+'</small></li>' for n,c in mentions)+'</ul>') if mentions else ''}
 </section>
+<section><h2><span class="hi" data-ic="timeline" data-col="#7c8a99"></span>Timeline (PT, newest first)</h2><ul class="tl">{timeline}</ul></section>
 <section><h2><span class="hi" data-ic="live" data-col="#e5484d"></span>Watch Duty incident reports <small style="text-transform:none;letter-spacing:0">· <a href="https://app.watchduty.org/i/124958" target="_blank" rel="noopener">open Watch Duty</a></small></h2>
 <ul class="tl">{''.join(f'<li><time>{t}</time><span>{html.escape(m)}</span></li>' for t,m in wd_reports) or '<li><span class="sub">No reports captured yet.</span></li>'}</ul>
-<p class="sub">Verified reports from Watch Duty's reporters, mirrored here as of {html.escape(_pt(wd.get('fetched','')+':00Z') if wd.get('fetched') else '')}{(' · incident address: '+html.escape(wd['event'].get('address') or '')) if wd.get('event',{}).get('address') else ''}.</p></section>
-<section><h2><span class="hi" data-ic="timeline" data-col="#7c8a99"></span>Timeline (PT, newest first)</h2><ul class="tl">{timeline}</ul></section>
+<p class="sub">Verified reports from Watch Duty's reporters, mirrored as of {html.escape(datetime.datetime.fromisoformat(wd['fetched']).strftime('%-I:%M %p') if wd.get('fetched') else '')} PT{(' · incident address: '+html.escape(wd['event'].get('address') or '')) if wd.get('event',{}).get('address') else ''}.</p></section>
+
 <section><h2><span class="hi" data-ic="external" data-col="#7c8a99"></span>Official sources</h2><div class="links">
 <a href="https://protect.genasys.com/search" target="_blank" rel="noopener">Genasys Protect <small>zones by address</small></a>
 <a href="https://ocpw.maps.arcgis.com/apps/instant/lookup/index.html?appid=61efa4f48aaf42638d7fe59c395b4865&amp;center=-117.6429%3B33.4887&amp;level=12" target="_blank" rel="noopener">OC Public Works zone lookup <small>county evacuation map</small></a>
@@ -300,10 +308,11 @@ nav.tabs{{display:none}}
 <a href="https://www.san-clemente.org/" target="_blank" rel="noopener">City of San Clemente</a>
 </div></section>
 <section id="posts"><h2><span class="hi" data-ic="post" data-col="#f76b15"></span>Latest posts <small style="text-transform:none;letter-spacing:0">· {n_posts} via LunarCrush, newest first</small></h2>{('<article class="post video"><div class="meta"><span>Live</span><span>'+html.escape(facts["live_video"]["label"])+'</span></div><iframe loading="lazy" src="https://www.youtube.com/embed/'+re.sub(r"[^\w-]","",facts["live_video"]["id"])+'" title="Live coverage" allowfullscreen></iframe></article>') if facts.get("live_video") else ''}
+<p class="sub" style="margin:0 0 8px">These are public posts collected automatically. Most are <b>not verified</b> and some are people's readings of scanner traffic. Do not make evacuation decisions from them. Follow <a href="https://x.com/OCFireAuthority" target="_blank" rel="noopener">@OCFireAuthority</a> and <a href="https://www.alertoc.gov/" target="_blank" rel="noopener">AlertOC</a>.</p>
 <div id="feed">{''.join(cards)}</div></section>
 <p class="sub">Map data © OpenStreetMap contributors. Imagery © Esri. Page rebuilt every 5 minutes while the incident is active.</p>
 </aside></div>
-<nav class="tabs"><button class="on" data-t="map"><span class="hi" data-ic="locate" data-col="currentColor"></span>Map</button><button data-t="info"><span class="hi" data-ic="danger" data-col="currentColor"></span>Streets &amp; status</button><button data-t="posts"><span class="hi" data-ic="post" data-col="currentColor"></span>Posts</button></nav>
+<nav class="tabs" role="tablist"><button class="on" data-t="map"><span class="hi" data-ic="locate" data-col="currentColor"></span>Map</button><button data-t="info"><span class="hi" data-ic="danger" data-col="currentColor"></span>Streets &amp; status</button><button data-t="posts"><span class="hi" data-ic="post" data-col="currentColor"></span>Posts</button></nav>
 <script>
 const GJ={jss(gj)};
 const map=L.map('map',{{zoomControl:true}}).setView([33.474,-117.650],13);
@@ -326,7 +335,7 @@ if(MISS.length){{const ul=document.createElement('ul');MISS.forEach(n=>{{const l
 const lblLayer=L.layerGroup();['Avenida Calita','Via La Mirada','Via De Agua','Calle Esperanza','Avenida California','Camino Las Ramblas','Portico Del Norte','Avenida Placida','La Novia Avenue','Via Cerro Rebal'].forEach(n=>{{const ls=groups[n];if(!ls)return;const c=L.featureGroup(ls).getBounds().getCenter();lblLayer.addLayer(L.marker(c,{{opacity:0,interactive:false}}).bindTooltip(n,{{permanent:true,className:'lbl',direction:'top',offset:[0,-4]}}));}});const syncLbl=()=>{{if(map.getZoom()>=15){{if(!map.hasLayer(lblLayer))lblLayer.addTo(map);}}else if(map.hasLayer(lblLayer))map.removeLayer(lblLayer);}};map.on('zoomend',syncLbl);syncLbl();
 
 // ---- live county evacuation zones (OC Public Works feature layer)
-const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}}[c]));
+const cdir=d=>['north','northeast','east','southeast','south','southwest','west','northwest'][Math.round(((d%360)+360)%360/45)%8];const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}}[c]));
 const ZL='https://services.arcgis.com/UXmFoWC7yDHcDN5Q/arcgis/rest/services/Know_Your_Evacuation_Areas_OC_VIew/FeatureServer/0/query';
 const zoneLayer=L.geoJSON(null,{{style:f=>{{const t=effType(f.properties);const o=/order/i.test(t),w=/warning/i.test(t);return{{color:o?'#e5484d':w?'#f5b400':'#6b7684',weight:o||w?2:1,fillColor:o?'#e5484d':w?'#f5b400':'#000',fillOpacity:o?.22:w?.18:0,dashArray:o||w?null:'3 4'}};}},
  onEachFeature:(f,l)=>{{const p=f.properties;l.bindTooltip(`<b>${{esc(p.Evac_Area)}}</b><br>${{esc(effType(p))}}`,{{className:'lbl',sticky:true}});}}}}).addTo(map);
@@ -334,7 +343,7 @@ let zoneStatus={{}};const spreadLayer=L.layerGroup().addTo(map);const photoLayer
 const OVR_ORDER={jss(facts.get('order_zones',{}))},OVR_WARN={jss(facts.get('warning_zones',{}))};
 const norm=z=>String(z||'').replace(/\\s+/g,'').toUpperCase();
 function effType(p){{const z=norm(p.Evac_Area),t=p.Evac_Type||'';if(/order/i.test(t))return t;const o=Object.keys(OVR_ORDER).find(k=>norm(k)===z);if(o)return 'Evacuation Order (per '+OVR_ORDER[o]+')';if(/warning/i.test(t))return t;const w=Object.keys(OVR_WARN).find(k=>norm(k)===z);if(w)return 'Evacuation Warning (per '+OVR_WARN[w]+')';return t;}}
-L.control.layers({{'Street map':street,'Satellite':sat}},{{'County evacuation zones (live)':zoneLayer,'Predicted spread (1/2/3 h)':spreadLayer,'Photos (Watch Duty users)':photoLayer,'Wind stations (NWS)':stnLayer,'Shelters':shelterLayer,'Posts by street':postLayer,'Road closures':closureLayer,'Streets':gl,'Radio-traffic sketch':evacL}},{{collapsed:true,position:'topright'}}).addTo(map);
+L.control.layers({{'Street map':street,'Satellite':sat}},{{'County evacuation zones (live)':zoneLayer,'Wind spread guide (not a forecast)':spreadLayer,'Photos (Watch Duty users)':photoLayer,'Wind stations (NWS)':stnLayer,'Shelters':shelterLayer,'Posts by street':postLayer,'Road closures':closureLayer,'Streets':gl,'Radio-traffic sketch':evacL}},{{collapsed:true,position:'topright'}}).addTo(map);
 
 async function loadZones(){{try{{
  const u=ZL+'?where=1%3D1&geometry=-117.75,33.40,-117.55,33.55&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=Evac_Area,Evac_Type,City,Area_Desc&returnGeometry=true&outSR=4326&f=geojson&_='+Date.now();
@@ -390,11 +399,11 @@ function drawSpread(o){{try{{if(!window.spreadModel||!FRONT.length||!o)return;co
  const m=spreadModel({{...base,windMph:Math.max(5,o.mph||15)}}),g=spreadModel({{...base,windMph:Math.max(o.gust||0,o.mph||15)}});
  spreadLayer.clearLayers();
  const COAST=[[33.462,-117.705],[33.449,-117.672],[33.430,-117.640],[33.416,-117.618],[33.395,-117.590]];const clip=poly=>{{let out=poly;for(let i=0;i<COAST.length-1;i++){{const a=COAST[i],b=COAST[i+1];const side=p=>(b[1]-a[1])*(p[0]-a[0])-(b[0]-a[0])*(p[1]-a[1]);const res=[];for(let k=0;k<out.length;k++){{const P=out[k],Q=out[(k+1)%out.length],sp=side(P),sq=side(Q);if(sp>=0)res.push(P);if((sp>=0)!==(sq>=0)){{const t=sp/(sp-sq);res.push([P[0]+t*(Q[0]-P[0]),P[1]+t*(Q[1]-P[1])]);}}}}out=res;if(!out.length)break;}}return out;}};
- const iso=isochrones(FRONT,m,[3,2,1]).map(i=>({{...i,polygon:clip(i.polygon)}}));iso.forEach(i=>L.polygon(i.polygon,{{color:'#f76b15',weight:1,fillColor:'#f76b15',fillOpacity:i.hour===1?.22:i.hour===2?.13:.07,interactive:true}}).bindTooltip(`+${{i.hour}} h at ${{Math.round(o.mph)}} mph sustained · head run ${{i.headRunMiles.toFixed(1)}} mi · see methodology`,{{className:'lbl',sticky:true}}).addTo(spreadLayer));
- if(o.gust&&o.gust>o.mph){{const gi=isochrones(FRONT,g,[1])[0];gi.polygon=clip(gi.polygon);L.polygon(gi.polygon,{{color:'#ffb366',weight:2,dashArray:'5 5',fill:false}}).bindTooltip(`+1 h if gusts of ${{Math.round(o.gust)}} mph hold · head run ${{gi.headRunMiles.toFixed(1)}} mi`,{{className:'lbl',sticky:true}}).addTo(spreadLayer);}}
+ const iso=isochrones(FRONT,m,[3,2,1]).map(i=>({{...i,polygon:clip(i.polygon)}}));iso.forEach(i=>L.polygon(i.polygon,{{color:'#4b5563',weight:1.5,dashArray:'4 4',fillColor:'#6b7280',fillOpacity:i.hour===1?.14:i.hour===2?.08:.04,interactive:true}}).bindTooltip(`Rough wind guide only, not where the fire will go. +${{i.hour}} h at ${{Math.round(o.mph)}} mph if nothing stopped it (${{i.headRunMiles.toFixed(1)}} mi)`,{{className:'lbl',sticky:true}}).addTo(spreadLayer));
+ if(o.gust&&o.gust>o.mph){{const gi=isochrones(FRONT,g,[1])[0];gi.polygon=clip(gi.polygon);L.polygon(gi.polygon,{{color:'#374151',weight:2,dashArray:'2 6',fill:false}}).bindTooltip(`Rough wind guide only. +1 h if gusts of ${{Math.round(o.gust)}} mph held (${{gi.headRunMiles.toFixed(1)}} mi)`,{{className:'lbl',sticky:true}}).addTo(spreadLayer);}}
  FRONT.forEach(p=>L.marker(p,{{icon:L.divIcon({{className:'',html:mk('front','#e5484d',18),iconSize:[18,18],iconAnchor:[9,9]}}),interactive:false}}).addTo(spreadLayer));
  const st=document.querySelectorAll('#spreadstats b');st[0].textContent=m.headRosMph.toFixed(1);st[1].textContent=iso.find(i=>i.hour===1).headRunMiles.toFixed(1);st[2].textContent=Math.round(m.flameLengthFt);
- document.getElementById('spreadnote').textContent=`Wind from ${{Math.round(base.windFromDeg)}}° at ${{Math.round(o.mph)}} mph${{o.gust?', gusts '+Math.round(o.gust):''}} → fire pushed toward ${{Math.round((base.windFromDeg+180)%360)}}°. ${{m.note}}. Gust case head speed ${{g.headRosMph.toFixed(1)}} mph.`;
+ document.getElementById('spreadnote').textContent=`Wind from the ${{cdir(base.windFromDeg)}} (${{Math.round(base.windFromDeg)}}°) at ${{Math.round(o.mph)}} mph${{o.gust?', gusts '+Math.round(o.gust):''}}, pushing the fire ${{cdir(base.windFromDeg+180)}}. ${{m.note}}. Gust case head speed ${{g.headRosMph.toFixed(1)}} mph.`;
 }}catch(e){{document.getElementById('spreadnote').textContent='Spread model unavailable.';}}}}
 drawSpread(WIND[0]||{{dir:95,mph:17,gust:30,rh:20,tempF:93}});
 // ---- address check
@@ -407,11 +416,11 @@ async function checkPoint(lat,lon,label){{
  if(!r.ok||j.error||!Array.isArray(j.features)){{show('','Lookup failed','The county zone service returned an error. Do not assume you are clear. Use the OC zone map link below.');return;}}
  const f=j.features[0];
  if(pin)pin.remove();pin=L.circleMarker([lat,lon],{{radius:8,color:'#fff',weight:2,fillColor:'#8ec5ff',fillOpacity:1}}).addTo(map);map.setView([lat,lon],15);
- if(!f){{show('ok','Not inside an Orange County evacuation zone','<span>'+(label||'')+'</span><br>This lookup only covers zones in the county layer. Stay alert and check official sources.');return;}}
+ if(!f){{show('ok','No evacuation zone found for this address','<span>We matched: <b>'+(label||'')+'</b></span><br>This does <b>not</b> mean you are safe. The county map can be behind what crews are ordering, and the address match can be wrong. If you see flames or heavy smoke, or a deputy tells you to go, leave. Confirm on the <a href="https://ocpw.maps.arcgis.com/apps/instant/lookup/index.html?appid=61efa4f48aaf42638d7fe59c395b4865" target="_blank" rel="noopener">OC zone map</a>. Sign up at <a href="https://www.alertoc.gov/" target="_blank" rel="noopener">AlertOC</a>.');return;}}
  const p=f.attributes,t=esc(effType(p));p.Evac_Area=esc(p.Evac_Area);
- if(/order/i.test(t))show('order','EVACUATION ORDER: zone '+p.Evac_Area,`<span>${{label||''}}</span><br>Leave now. ${{t}}. Confirm on the <a href="https://ocpw.maps.arcgis.com/apps/instant/lookup/index.html?appid=61efa4f48aaf42638d7fe59c395b4865" target="_blank" rel="noopener">county zone map</a>.`);
+ if(/order/i.test(t))show('order','EVACUATION ORDER: zone '+p.Evac_Area,`<span>We matched: <b>${{label||''}}</b></span><br>Leave now. ${{t}}. Confirm on the <a href="https://ocpw.maps.arcgis.com/apps/instant/lookup/index.html?appid=61efa4f48aaf42638d7fe59c395b4865" target="_blank" rel="noopener">county zone map</a>.`);
  else if(/warning/i.test(t))show('warn','EVACUATION WARNING: zone '+p.Evac_Area,`<span>${{label||''}}</span><br>Be ready to leave. ${{t}}.`);
- else show('ok','Zone '+p.Evac_Area+': no evacuation in place',`<span>${{label||''}}</span><br>Status now: ${{t}}. Zones can change fast; recheck.`);
+ else show('ok','Zone '+p.Evac_Area+': no order or warning right now',`<span>We matched: <b>${{label||''}}</b></span><br>This fire is moving fast and zones can change within minutes. Get ready to leave anyway, and check again.`);
 }}
 document.getElementById('addr').addEventListener('submit',async e=>{{e.preventDefault();e.stopPropagation();const q=document.getElementById('q').value.trim();if(!q){{show('','Type a street address','Example: 27000 Via De Agua');return;}}document.getElementById('q').blur();show('','Finding address…',esc(q));
  try{{const g=await fetch('https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?f=json&maxLocations=1&outFields=Match_addr&countryCode=USA&location=-117.65,33.48&singleLine='+encodeURIComponent(q+(/ca\b|california/i.test(q)?'':', CA')));
@@ -419,6 +428,7 @@ document.getElementById('addr').addEventListener('submit',async e=>{{e.preventDe
   await checkPoint(+c.location.y,+c.location.x,c.address);}}catch(err){{show('','Lookup failed','Could not reach the geocoder or county layer. Use the OC zone map link below.');}}}});
 document.getElementById('geo').onclick=()=>{{if(!navigator.geolocation)return show('','Location unavailable','');show('','Getting your location…','');navigator.geolocation.getCurrentPosition(p=>checkPoint(p.coords.latitude,p.coords.longitude,'Your current location'),()=>show('','Location permission denied','Type your address instead.'),{{enableHighAccuracy:true,timeout:10000}});}};
 document.querySelectorAll('h2 .hi, nav.tabs .hi, .notice .hi').forEach(e=>e.innerHTML=ic(e.dataset.ic,e.dataset.col));
+const BUILT_TS={int(now.timestamp())};function staleCheck(){{const m=Math.round((Date.now()/1000-BUILT_TS)/60);const el=document.getElementById('stale');if(m>45){{el.hidden=false;el.innerHTML=`This page has not been updated in over ${{m}} minutes. Check <a style="color:#ffd45c" href="https://www.ocfa.org/" target="_blank" rel="noopener">OCFA</a> and <a style="color:#ffd45c" href="https://protect.genasys.com/search" target="_blank" rel="noopener">Genasys Protect</a> for current orders.`;}}else el.hidden=true;}}staleCheck();setInterval(staleCheck,60000);
 function tabs(t){{document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));}}
 document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>{{document.body.className='tab-'+b.dataset.t;tabs(b.dataset.t);if(b.dataset.t==='map')setTimeout(()=>map.invalidateSize(),50);if(window.twttr&&twttr.widgets)twttr.widgets.load();}});
 </script>

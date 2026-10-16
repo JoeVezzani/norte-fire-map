@@ -26,7 +26,7 @@ ol li,ul li{margin:4px 0}
 <h1>How the predicted spread is computed</h1>
 <p class="muted">Every number on this page is produced by the same code the map runs, <a href="spread.js">spread.js</a> (about 100 lines, no dependencies). Nothing is hand-drawn.</p>
 
-<div class="warn"><b>What this is and is not.</b> This is a textbook surface fire spread estimate under the assumption that nothing stops the fire: no containment, no engines, no aircraft, no roads, no irrigated yards, no wind shift. Real fires on October 16 have all of those. It is published so people can see which direction the wind is pushing the fire and roughly how fast, not as a prediction of what will burn. Evacuation decisions come from OCFA, CAL FIRE and the Sheriff, never from this page.</div>
+<div class="warn"><b>This is not a fire forecast.</b> It shows only which way the wind is pushing and a rough speed if nothing stopped the fire. Real fires throw embers a mile or more ahead and jump freeways, and this model cannot show that. Areas outside the shapes are not safe. Never use this page to decide whether to evacuate.<br><br><b>What this is and is not.</b> This is a textbook surface fire spread estimate under the assumption that nothing stops the fire: no containment, no engines, no aircraft, no roads, no irrigated yards, no wind shift. Real fires on October 16 have all of those. It is published so people can see which direction the wind is pushing the fire and roughly how fast, not as a prediction of what will burn. Evacuation decisions come from OCFA, CAL FIRE and the Sheriff, never from this page.</div>
 
 <h2>1. Live inputs right now</h2>
 <div class="live" id="live">Loading current wind and recomputing…</div>
@@ -107,7 +107,7 @@ Flame length L_f = 0.45 · I_B^0.46 ft,  I_B = I_R · (384/σ) · R / 60   (Byra
 <li>Andrews, P.L. 2012. <i>Modeling wind adjustment factor and midflame wind speed for Rothermel's surface fire spread model.</i> RMRS-GTR-266.</li>
 <li>NWCG PMS 437, <i>Fire Behavior Field Reference Guide</i>, fine dead fuel moisture tables.</li>
 </ul>
-<p class="muted">Model code drafted with an AI research assistant and checked against the published coefficients above. Report errors to joevezzani@gmail.com.</p>
+<p class="muted">Model code drafted with an AI research assistant and checked against the published coefficients above. Report errors via <a href="https://github.com/JoeVezzani/norte-fire-map/issues">GitHub issues</a>.</p>
 </main>
 <script>
 (async()=>{
