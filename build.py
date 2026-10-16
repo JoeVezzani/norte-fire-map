@@ -217,19 +217,22 @@ if(MISS.length){{const ul=document.createElement('ul');MISS.forEach(n=>{{const l
 // ---- live county evacuation zones (OC Public Works feature layer)
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}}[c]));
 const ZL='https://services.arcgis.com/UXmFoWC7yDHcDN5Q/arcgis/rest/services/Know_Your_Evacuation_Areas_OC_VIew/FeatureServer/0/query';
-const zoneLayer=L.geoJSON(null,{{style:f=>{{const t=(f.properties.Evac_Type||'');const o=/order/i.test(t),w=/warning/i.test(t);return{{color:o?'#e5484d':w?'#f5b400':'#6b7684',weight:o||w?2:1,fillColor:o?'#e5484d':w?'#f5b400':'#000',fillOpacity:o?.22:w?.18:0,dashArray:o||w?null:'3 4'}};}},
- onEachFeature:(f,l)=>{{const p=f.properties;l.bindTooltip(`<b>${{esc(p.Evac_Area)}}</b><br>${{esc(p.Evac_Type)}}`,{{className:'lbl',sticky:true}});}}}}).addTo(map);
+const zoneLayer=L.geoJSON(null,{{style:f=>{{const t=effType(f.properties);const o=/order/i.test(t),w=/warning/i.test(t);return{{color:o?'#e5484d':w?'#f5b400':'#6b7684',weight:o||w?2:1,fillColor:o?'#e5484d':w?'#f5b400':'#000',fillOpacity:o?.22:w?.18:0,dashArray:o||w?null:'3 4'}};}},
+ onEachFeature:(f,l)=>{{const p=f.properties;l.bindTooltip(`<b>${{esc(p.Evac_Area)}}</b><br>${{esc(effType(p))}}`,{{className:'lbl',sticky:true}});}}}}).addTo(map);
 let zoneStatus={{}};
+const OVR_ORDER={json.dumps(facts.get('order_zones',{}))},OVR_WARN={json.dumps(facts.get('warning_zones',{}))};
+const norm=z=>String(z||'').replace(/\s+/g,'').toUpperCase();
+function effType(p){{const z=norm(p.Evac_Area),t=p.Evac_Type||'';if(/order/i.test(t))return t;const o=Object.keys(OVR_ORDER).find(k=>norm(k)===z);if(o)return 'Evacuation Order (per '+OVR_ORDER[o]+')';if(/warning/i.test(t))return t;const w=Object.keys(OVR_WARN).find(k=>norm(k)===z);if(w)return 'Evacuation Warning (per '+OVR_WARN[w]+')';return t;}}
 L.control.layers({{'Street map':street,'Satellite':sat}},{{'County evacuation zones (live)':zoneLayer,'Streets':gl,'Radio-traffic sketch':evacL}},{{collapsed:window.innerWidth<900,position:'topright'}}).addTo(map);
 
 async function loadZones(){{try{{
  const u=ZL+'?where=1%3D1&geometry=-117.75,33.40,-117.55,33.55&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=Evac_Area,Evac_Type,City,Area_Desc&returnGeometry=true&outSR=4326&f=geojson&_='+Date.now();
  const r=await fetch(u);const g=await r.json();if(!g.features)throw 0;
  zoneLayer.clearLayers();zoneLayer.addData(g);zoneLayer.bringToBack();evacL.remove();
- const act=g.features.map(f=>f.properties).filter(p=>!/no evacuation/i.test(p.Evac_Type||''));
+ const act=g.features.map(f=>({{...f.properties,Evac_Type:effType(f.properties)}})).filter(p=>/order|warning/i.test(p.Evac_Type));
  zoneStatus={{}};act.forEach(p=>zoneStatus[p.Evac_Area]=p.Evac_Type);
  const z=document.getElementById('zones');if(act.length){{z.innerHTML=act.sort((a,b)=>a.Evac_Area.localeCompare(b.Evac_Area)).map(p=>`<span class="${{/warning/i.test(p.Evac_Type)?'warn':''}}">${{esc(p.Evac_Area)}} · ${{/order/i.test(p.Evac_Type)?'ORDER':/warning/i.test(p.Evac_Type)?'WARNING':esc(p.Evac_Type)}}</span>`).join('');}}
- document.getElementById('zonesnote').textContent='Live from the county zone layer, checked '+new Date().toLocaleTimeString([],{{hour:'numeric',minute:'2-digit'}})+'. Red = order (leave now), yellow = warning (be ready).';
+ document.getElementById('zonesnote').textContent='County zone layer plus OCFA announcements, checked '+new Date().toLocaleTimeString([],{{hour:'numeric',minute:'2-digit'}})+'. Red = order (leave now), yellow = warning (be ready).';
 }}catch(e){{document.getElementById('zonesnote').textContent='Could not reach the county zone layer; showing last known zones. Use the OC zone map link below.';}}}}
 loadZones();setInterval(loadZones,120000);
 // ---- address check
@@ -243,7 +246,7 @@ async function checkPoint(lat,lon,label){{
  const f=j.features[0];
  if(pin)pin.remove();pin=L.circleMarker([lat,lon],{{radius:8,color:'#fff',weight:2,fillColor:'#8ec5ff',fillOpacity:1}}).addTo(map);map.setView([lat,lon],15);
  if(!f){{show('ok','Not inside an Orange County evacuation zone','<span>'+(label||'')+'</span><br>This lookup only covers zones in the county layer. Stay alert and check official sources.');return;}}
- const p=f.attributes,t=esc(p.Evac_Type);p.Evac_Area=esc(p.Evac_Area);
+ const p=f.attributes,t=esc(effType(p));p.Evac_Area=esc(p.Evac_Area);
  if(/order/i.test(t))show('order','EVACUATION ORDER: zone '+p.Evac_Area,`<span>${{label||''}}</span><br>Leave now. ${{t}}. Confirm on the <a href="https://ocpw.maps.arcgis.com/apps/instant/lookup/index.html?appid=61efa4f48aaf42638d7fe59c395b4865" target="_blank" rel="noopener">county zone map</a>.`);
  else if(/warning/i.test(t))show('warn','EVACUATION WARNING: zone '+p.Evac_Area,`<span>${{label||''}}</span><br>Be ready to leave. ${{t}}.`);
  else show('ok','Zone '+p.Evac_Area+': no evacuation in place',`<span>${{label||''}}</span><br>Status now: ${{t}}. Zones can change fast; recheck.`);

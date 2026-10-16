@@ -50,5 +50,13 @@
    "1:08 PM",
    "Prima Deshecha Landfill closed (OC Waste & Recycling). Homes impacted at Avenida Calita, Via La Mirada, Via De Agua."
   ]
- ]
+ ],
+ "order_zones": {
+  "SJC04": "OCFA 1:04 PM",
+  "SJC05": "OCFA 1:04 PM",
+  "SJC 10": "OCFA 1:04 PM",
+  "SCL12": "OCFA 1:04 PM",
+  "SCL13": "OCFA 1:04 PM"
+ },
+ "warning_zones": {}
 }
