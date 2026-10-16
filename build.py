@@ -70,6 +70,8 @@ STREETS = {
  'Avenida California': ('Avenida California', G_THREAT),
  'Paseo Aliso': ('Paseo Aliso', G_THREAT),
  'Avenida Placida': ('Avenida Placida', G_THREAT),
+ 'La Novia Avenue': ('La Novia Avenue', G_THREAT),
+ 'Via Cerro Rebal': ('Via Cerro Rebal', G_THREAT),
  'Portico Del Norte': ('Portico Del Norte', G_ORIGIN),
  'Eminencia Del Norte': ('Eminencia Del Norte', G_ORIGIN),
  'Camino Capistrano': ('Camino Capistrano', G_REF),
@@ -286,7 +288,7 @@ ORDER.forEach(g=>{{const names=[...(byGroup[g]||[])].sort();if(!names.length)ret
  names.forEach(n=>{{const li=document.createElement('li');li.textContent=n;li.onclick=()=>{{document.body.className='tab-map';tabs('map');map.invalidateSize();map.fitBounds(L.featureGroup(groups[n]).getBounds().pad(.5));groups[n].forEach(l=>l.openTooltip());}};ul.appendChild(li);}});leg.appendChild(ul);}});
 if(MISS.length){{const ul=document.createElement('ul');MISS.forEach(n=>{{const li=document.createElement('li');li.className='miss';li.innerHTML=`${{n}}<small>not in map data yet</small>`;ul.appendChild(li);}});leg.appendChild(ul);}}
 // permanent labels on the named streets
-const lblLayer=L.layerGroup();['Avenida Calita','Via La Mirada','Via De Agua','Calle Esperanza','Avenida California','Camino Las Ramblas','Portico Del Norte','Avenida Placida'].forEach(n=>{{const ls=groups[n];if(!ls)return;const c=L.featureGroup(ls).getBounds().getCenter();lblLayer.addLayer(L.marker(c,{{opacity:0,interactive:false}}).bindTooltip(n,{{permanent:true,className:'lbl',direction:'top',offset:[0,-4]}}));}});const syncLbl=()=>{{if(map.getZoom()>=15){{if(!map.hasLayer(lblLayer))lblLayer.addTo(map);}}else if(map.hasLayer(lblLayer))map.removeLayer(lblLayer);}};map.on('zoomend',syncLbl);syncLbl();
+const lblLayer=L.layerGroup();['Avenida Calita','Via La Mirada','Via De Agua','Calle Esperanza','Avenida California','Camino Las Ramblas','Portico Del Norte','Avenida Placida','La Novia Avenue','Via Cerro Rebal'].forEach(n=>{{const ls=groups[n];if(!ls)return;const c=L.featureGroup(ls).getBounds().getCenter();lblLayer.addLayer(L.marker(c,{{opacity:0,interactive:false}}).bindTooltip(n,{{permanent:true,className:'lbl',direction:'top',offset:[0,-4]}}));}});const syncLbl=()=>{{if(map.getZoom()>=15){{if(!map.hasLayer(lblLayer))lblLayer.addTo(map);}}else if(map.hasLayer(lblLayer))map.removeLayer(lblLayer);}};map.on('zoomend',syncLbl);syncLbl();
 
 // ---- live county evacuation zones (OC Public Works feature layer)
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}}[c]));
