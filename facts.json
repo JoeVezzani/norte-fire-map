@@ -89,6 +89,10 @@
   [
    "2:12 PM",
    "Capistrano Unified dismissing nine schools early: Bernice Ayer MS, Clarence Lobo ES, Concordia ES, Harold Ambuehl ES, San Clemente HS, San Juan Hills HS, Shorecliffs MS, Truman Benedict ES, Vista Del Mar. Elementary parents go to the school for pickup (OC Dept of Education)."
+  ],
+  [
+   "2:15 PM",
+   "ABC7: at least 4 homes destroyed in the San Clemente / San Juan Capistrano area. Not yet in an OCFA count."
   ]
  ],
  "order_zones": {
@@ -160,5 +164,6 @@
    "Truman Benedict Elementary",
    "Vista Del Mar"
   ]
- }
+ },
+ "damage": "At least 4 homes destroyed (ABC7, 2:15 PM; no official OCFA count yet)"
 }
