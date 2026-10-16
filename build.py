@@ -38,6 +38,10 @@ for z in _wd_warn: facts.setdefault('warning_zones',{}).setdefault(z,'Watch Duty
 wd_reports=[(_pt(r['t']),_strip(r['msg'])) for r in wd.get('reports',[]) if r.get('msg')]
 _prx=re.compile(r'^https://images\.watchduty\.org/uploads/[\w/.-]+\.(jpe?g|png|webp)$',re.I)
 wd_photos=[p for p in wd.get('photos',[]) if p.get('media') and isinstance(p.get('lat'),(int,float)) and isinstance(p.get('lng'),(int,float)) and _prx.match(str(p['media'][0]))]
+try:
+    perim = json.load(open('perimeter.geojson'))
+    if not perim.get('features'): perim=None
+except Exception: perim = None
 try: wind = json.load(open('wind.json'))
 except Exception: wind = {'obs':[],'hourly':[],'fetched':''}
 # street mentions in the last 90 minutes of posts
@@ -151,6 +155,23 @@ for _p in sorted(posts,key=lambda p:-p.get('post_created',0)):
     for lab in hit:
         lst=street_posts.setdefault(lab,[])
         if len(lst)<6: lst.append({'t':datetime.datetime.fromtimestamp(_p.get('post_created',0),PT).strftime('%-I:%M %p'),'who':(_p.get('influencer_name') or re.sub(r'https?://(www\.)?(x|twitter)\.com/([^/]+)/.*',r'@\3',html.unescape(_l)))[:30],'link':html.unescape(_l),'text':_t[:140],'kind':'video' if _p.get('post_type')=='youtube-video' or 'video' in _tl or 'footage' in _tl or 'live' in _tl else 'post'})
+# auto front: downwind-most 15% of perimeter vertices, up to 8 points
+if perim:
+    try:
+        _wd=(wind['obs'][0]['dir'] if wind.get('obs') else 70)
+        _th=math.radians((_wd+180)%360)
+        _pts=[p for poly in perim['features'][0]['geometry']['coordinates'] for ring in poly for p in ring]
+        _lat0=sum(p[1] for p in _pts)/len(_pts)
+        _proj=lambda p:(p[0]-(-117.65))*math.cos(math.radians(_lat0))*math.sin(_th)+(p[1]-33.48)*math.cos(_th)
+        _pts.sort(key=_proj,reverse=True)
+        _top=_pts[:max(8,len(_pts)//7)]
+        _step=max(1,len(_top)//8)
+        facts['front']=[[round(p[1],5),round(p[0],5)] for p in _top[::_step]][:8]
+        _pd=perim['features'][0]['properties'].get('date','')
+        if _pd:
+            facts['front_time']=datetime.datetime.strptime(_pd[:19],'%Y-%m-%d %H:%M:%S').replace(tzinfo=datetime.timezone.utc).astimezone(PT).isoformat()
+        facts['front_note']=f"Downwind edge of the FIRIS perimeter mapped {datetime.datetime.fromisoformat(facts['front_time']).strftime('%-I:%M %p')} PT, taken automatically from the perimeter"
+    except Exception as _e: print('front auto failed',_e)
 zones_txt=', '.join(sorted(facts.get('order_zones',{}).keys()))
 guidance=open('guidance.html').read().replace('{ZONES}',html.escape(zones_txt))
 guidance2=open('guidance2.html').read()
@@ -269,6 +290,7 @@ nav.tabs{{display:none}}
 <p class="sub">Evacuation <b>orders</b> (leave now):</p>
 <div class="zones" id="zones">{''.join(f'<span>{html.escape(z)}</span>' for z in zones)}</div><p class="sub" id="zonesnote">Loading live zone status from the county layer…</p>
 {('<p class="sub"><b>Road and facility closures:</b> '+' · '.join(html.escape(c) for c in facts.get('closures',[]))+'</p>') if facts.get('closures') else ''}
+{('<p class="sub"><b>Fire perimeter:</b> the solid red area on the map is the FIRIS aircraft-mapped perimeter from '+html.escape(datetime.datetime.fromisoformat(facts['front_time']).strftime('%-I:%M %p'))+' PT, mirrored from Watch Duty. Preliminary; it does not show which homes are damaged.</p>') if perim else ''}
 <p class="sub">Per radio traffic at 1:02 PM: all streets off Camino Las Ramblas down to I-5 and around to the San Juan dump. The red and yellow zones on the map are the live county evacuation areas.</p>
 </section>
 <section>
@@ -340,11 +362,11 @@ const cdir=d=>['north','northeast','east','southeast','south','southwest','west'
 const ZL='https://services.arcgis.com/UXmFoWC7yDHcDN5Q/arcgis/rest/services/Know_Your_Evacuation_Areas_OC_VIew/FeatureServer/0/query';
 const zoneLayer=L.geoJSON(null,{{style:f=>{{const t=effType(f.properties);const o=/order/i.test(t),w=/warning/i.test(t);return{{color:o?'#e5484d':w?'#f5b400':'#6b7684',weight:o||w?2:1,fillColor:o?'#e5484d':w?'#f5b400':'#000',fillOpacity:o?.22:w?.18:0,dashArray:o||w?null:'3 4'}};}},
  onEachFeature:(f,l)=>{{const p=f.properties;l.bindTooltip(`<b>${{esc(p.Evac_Area)}}</b><br>${{esc(effType(p))}}`,{{className:'lbl',sticky:true}});}}}}).addTo(map);
-let zoneStatus={{}};const spreadLayer=L.layerGroup().addTo(map);const photoLayer=L.layerGroup().addTo(map);const stnLayer=L.layerGroup().addTo(map);const shelterLayer=L.layerGroup().addTo(map);const postLayer=L.layerGroup().addTo(map);const closureLayer=L.layerGroup().addTo(map);
+let zoneStatus={{}};const spreadLayer=L.layerGroup().addTo(map);const photoLayer=L.layerGroup().addTo(map);const stnLayer=L.layerGroup().addTo(map);const shelterLayer=L.layerGroup().addTo(map);const postLayer=L.layerGroup().addTo(map);const closureLayer=L.layerGroup().addTo(map);const perimLayer=L.layerGroup().addTo(map);
 const OVR_ORDER={jss(facts.get('order_zones',{}))},OVR_WARN={jss(facts.get('warning_zones',{}))};
 const norm=z=>String(z||'').replace(/\\s+/g,'').toUpperCase();
 function effType(p){{const z=norm(p.Evac_Area),t=p.Evac_Type||'';if(/order/i.test(t))return t;const o=Object.keys(OVR_ORDER).find(k=>norm(k)===z);if(o)return 'Evacuation Order (per '+OVR_ORDER[o]+')';if(/warning/i.test(t))return t;const w=Object.keys(OVR_WARN).find(k=>norm(k)===z);if(w)return 'Evacuation Warning (per '+OVR_WARN[w]+')';return t;}}
-L.control.layers({{'Street map':street,'Satellite':sat}},{{'County evacuation zones (live)':zoneLayer,'Wind spread guide (not a forecast)':spreadLayer,'Photos (Watch Duty users)':photoLayer,'Wind stations (NWS)':stnLayer,'Shelters':shelterLayer,'Posts by street':postLayer,'Road closures':closureLayer,'Streets':gl,'Radio-traffic sketch':evacL}},{{collapsed:true,position:'topright'}}).addTo(map);
+L.control.layers({{'Street map':street,'Satellite':sat}},{{'Fire perimeter (FIRIS)':perimLayer,'County evacuation zones (live)':zoneLayer,'Wind spread guide (not a forecast)':spreadLayer,'Photos (Watch Duty users)':photoLayer,'Wind stations (NWS)':stnLayer,'Shelters':shelterLayer,'Posts by street':postLayer,'Road closures':closureLayer,'Streets':gl,'Radio-traffic sketch':evacL}},{{collapsed:true,position:'topright'}}).addTo(map);
 
 async function loadZones(){{try{{
  const u=ZL+'?where=1%3D1&geometry=-117.75,33.40,-117.55,33.55&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=Evac_Area,Evac_Type,City,Area_Desc&returnGeometry=true&outSR=4326&f=geojson&_='+Date.now();
@@ -390,6 +412,9 @@ liveStations();setInterval(liveStations,300000);
 async function liveAQ(){{try{{const r=await fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude=33.477&longitude=-117.661&current=pm2_5,us_aqi&timezone=America%2FLos_Angeles');const c=(await r.json()).current;const aqi=Math.round(c.us_aqi),cat=aqi<=50?'good':aqi<=100?'moderate':aqi<=150?'unhealthy for sensitive groups':aqi<=200?'unhealthy':aqi<=300?'very unhealthy':'hazardous';
  document.getElementById('aq').innerHTML=`<b>Air quality (regional model):</b> US AQI ${{aqi}}, ${{cat}}; PM2.5 ${{c.pm2_5}} µg/m³. This is a regional model estimate, not a smoke sensor. Downwind of the fire it is far worse: stay inside, close windows, set HVAC to recirculate, wear an N95 outdoors. <a href="https://fire.airnow.gov/" target="_blank" rel="noopener">AirNow fire and smoke map</a>`;}}catch(e){{document.getElementById('aq').innerHTML='<b>Air quality:</b> see the <a href="https://fire.airnow.gov/" target="_blank" rel="noopener">AirNow fire and smoke map</a>. Downwind of the fire: stay inside, recirculate HVAC, N95 outdoors.';}}}}
 liveAQ();setInterval(liveAQ,900000);
+// ---- FIRIS fire perimeter (via Watch Duty tiles)
+const PERIM={jss(perim) if perim else 'null'};
+if(PERIM){{const pl=L.geoJSON(PERIM,{{style:{{color:'#b91c1c',weight:2.5,fillColor:'#ef4444',fillOpacity:.28}}}}).addTo(perimLayer);pl.bindTooltip('Fire perimeter, '+esc(PERIM.features[0].properties.source)+' mapped '+esc(new Date(PERIM.features[0].properties.date.replace(' ','T')).toLocaleTimeString([],{{hour:'numeric',minute:'2-digit'}}))+' PT. Preliminary; a home inside is not necessarily damaged.',{{className:'lbl',sticky:true}});}}
 // ---- Watch Duty origin + user photos
 const WDE={jss({'lat':float(wd['event']['lat']) if isinstance(wd.get('event',{}).get('lat'),(int,float)) else None,'lng':float(wd['event']['lng']) if isinstance(wd.get('event',{}).get('lng'),(int,float)) else None,'address':str(wd.get('event',{}).get('address') or '')[:120]})},WDP={jss([{'lat':float(p['lat']),'lng':float(p['lng']),'t':_pt(p['t']),'u':p['media'][0]} for p in wd_photos][:30])};
 if(WDE.lat){{L.marker([WDE.lat,WDE.lng],{{icon:L.divIcon({{className:'',html:mk('origin','#b91c1c',30),iconSize:[30,30],iconAnchor:[15,15]}})}}).addTo(map).bindTooltip('Reported origin: '+esc(WDE.address||''),{{className:'lbl'}});}}
@@ -462,6 +487,10 @@ try:
     pts=[px(lon,lat) for lat,lon in [[33.4645,-117.667],[33.4675,-117.670],[33.472,-117.669],[33.478,-117.666],[33.483,-117.662],[33.489,-117.650],[33.492,-117.632],[33.489,-117.621],[33.482,-117.620],[33.476,-117.628],[33.470,-117.640],[33.4655,-117.650],[33.462,-117.660]]]
     d.polygon(pts,fill=(229,72,77,28),outline=(229,72,77,200))
     def hexrgb(h): return tuple(int(h[i:i+2],16) for i in (1,3,5))
+    if perim:
+        for poly in perim['features'][0]['geometry']['coordinates']:
+            for ring in poly[:1]:
+                d.polygon([px(*xy) for xy in ring],fill=(239,68,68,90),outline=(185,28,28,255))
     for f in sorted(feats,key=lambda f:[G_REF,G_ORDER,G_THREAT,G_IMPACT,G_ORIGIN].index(f['properties']['group'])):
         c=hexrgb(f['properties']['color']); g=f['geometry']
         line=[px(*xy) for xy in (g['coordinates'][0] if g['type']=='Polygon' else g['coordinates'])]

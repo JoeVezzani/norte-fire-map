@@ -58,6 +58,8 @@ print('new posts',new,'total',len(store))
 PY
 # Watch Duty capture (headless Chromium via Playwright); keep old wd.json on failure
 /Users/joevezzani/.joe-venv/bin/python3 -I wd_fetch.py >> ~/.norte-fire-refresh.log 2>&1 || echo "$(date '+%F %T') wd_fetch failed" >> ~/.norte-fire-refresh.log
+# FIRIS perimeter via Watch Duty tiles
+/Users/joevezzani/.joe-venv/bin/python3 -I perim_fetch.py >> ~/.norte-fire-refresh.log 2>&1 || echo "$(date '+%F %T') perim_fetch failed" >> ~/.norte-fire-refresh.log
 # preflight: never ship if a dependency is down or keyed
 for u in "https://tile.openstreetmap.org/14/2838/6617.png" "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/14/6617/2838" "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"; do
   c=$(curl -s -m 15 -o /dev/null -A "Mozilla/5.0" -w "%{http_code}" "$u"); [ "$c" = "200" ] || { echo "$(date '+%F %T') PREFLIGHT FAIL $c $u" >> ~/.norte-fire-refresh.log; exit 1; }
