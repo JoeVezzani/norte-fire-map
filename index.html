@@ -6,20 +6,20 @@
 <meta property="og:type" content="website"><meta property="og:site_name" content="Norte Fire Map">
 <meta property="og:title" content="Norte Fire: where the evacuation streets are">
 <meta property="og:description" content="Norte Fire, San Clemente and San Juan Capistrano: where Camino Las Ramblas, Via La Mirada, Avenida Calita and the other streets in the evacuation updates are, with official zone links.">
-<meta property="og:url" content="https://joevezzani.github.io/norte-fire-map/"><meta property="og:image" content="https://joevezzani.github.io/norte-fire-map/og.png?v=1792183640">
+<meta property="og:url" content="https://joevezzani.github.io/norte-fire-map/"><meta property="og:image" content="https://joevezzani.github.io/norte-fire-map/og.png?v=1792183678">
 <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Norte Fire: where the evacuation streets are">
-<meta name="twitter:description" content="Norte Fire, San Clemente and San Juan Capistrano: where Camino Las Ramblas, Via La Mirada, Avenida Calita and the other streets in the evacuation updates are, with official zone links."><meta name="twitter:image" content="https://joevezzani.github.io/norte-fire-map/og.png?v=1792183640">
+<meta name="twitter:description" content="Norte Fire, San Clemente and San Juan Capistrano: where Camino Las Ramblas, Via La Mirada, Avenida Calita and the other streets in the evacuation updates are, with official zone links."><meta name="twitter:image" content="https://joevezzani.github.io/norte-fire-map/og.png?v=1792183678">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://platform.twitter.com https://cdn.syndication.twimg.com; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com https://platform.twitter.com; font-src https://fonts.gstatic.com; img-src * data: blob:; connect-src https://services.arcgis.com https://geocode.arcgis.com https://api.weather.gov https://platform.twitter.com https://cdn.syndication.twimg.com https://api.twitter.com https://syndication.twitter.com; frame-src https://www.youtube.com https://platform.twitter.com https://syndication.twitter.com; child-src https://www.youtube.com https://platform.twitter.com https://syndication.twitter.com; base-uri 'self'; form-action 'self'">
 <meta name="theme-color" content="#0b0d10">
 <link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="manifest" href="site.webmanifest">
 <meta name="apple-mobile-web-app-title" content="Norte Fire"><meta name="geo.region" content="US-CA"><meta name="geo.placename" content="San Juan Capistrano, California">
-<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "name": "Norte Fire Map", "url": "https://joevezzani.github.io/norte-fire-map/", "description": "Norte Fire, San Clemente and San Juan Capistrano: where Camino Las Ramblas, Via La Mirada, Avenida Calita and the other streets in the evacuation updates are, with official zone links.", "dateModified": "2026-10-16T13:47:20.808419-07:00", "about": {"@type": "Event", "name": "Norte Fire", "startDate": "2026-10-16T11:30:00-07:00", "location": {"@type": "Place", "name": "San Clemente / San Juan Capistrano, Orange County, CA"}}}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "name": "Norte Fire Map", "url": "https://joevezzani.github.io/norte-fire-map/", "description": "Norte Fire, San Clemente and San Juan Capistrano: where Camino Las Ramblas, Via La Mirada, Avenida Calita and the other streets in the evacuation updates are, with official zone links.", "dateModified": "2026-10-16T13:47:58.168965-07:00", "about": {"@type": "Event", "name": "Norte Fire", "startDate": "2026-10-16T11:30:00-07:00", "location": {"@type": "Place", "name": "San Clemente / San Juan Capistrano, Orange County, CA"}}}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="spread.js?v=1792183640"></script>
+<script src="spread.js?v=1792183678"></script>
 <style>
 :root{--bg:#0b0d10;--panel:#12151a;--card:#171b21;--fg:#e8ebef;--muted:#8b95a3;--line:#242a33;--red:#e5484d;--orange:#f76b15;--amber:#f5b400;--gray:#7c8a99;--hdr:56px;--tabs:48px}
 *{box-sizing:border-box}html,body{height:100%}
@@ -106,10 +106,10 @@ nav.tabs{display:none}
 <p class="sub">Forecast: NWS San Diego hourly grid. Observations: NWS stations. Temperatures 93°F, humidity 23%.</p>
 </section>
 <section>
-<h2>Predicted spread, physics estimate</h2>
+<h2>Predicted spread, physics estimate <small style="text-transform:none;letter-spacing:0;font-weight:500">· <a href="methodology.html">how it is computed, with the math</a></small></h2>
 <div class="stats" id="spreadstats"><div class="stat"><b>--</b><span>head speed, mph</span></div><div class="stat"><b>--</b><span>1 hr run, miles</span></div><div class="stat"><b>--</b><span>flame length, ft</span></div></div>
 <p class="sub" id="spreadnote">Computing from live wind…</p>
-<p class="sub">Orange bands on the map are the 1, 2 and 3 hour envelopes at the current sustained wind. The dashed band is the 1 hour envelope at gust speed. Rothermel surface fire model with Scott and Burgan SH5 shrub fuel, Anderson ellipse, slope 25%. No spotting, no suppression, no wind shifts. Front assumed: Active western head near Via La Mirada, Via De Agua and Avenida Calita, per 1:02 PM radio traffic.</p>
+<p class="sub">Orange bands on the map are the 1, 2 and 3 hour envelopes at the current sustained wind. The dashed band is the 1 hour envelope at gust speed. Rothermel surface fire model, Scott and Burgan SH5 shrub fuel, Anderson ellipse, slope 25%, containment treated as 0%. No spotting, no suppression, no wind shifts. <a href="methodology.html">Full equations, inputs and sources.</a> Front assumed: Active western head near Via La Mirada, Via De Agua and Avenida Calita, per 1:02 PM radio traffic.</p>
 <p class="sub" style="color:#f3d9a4">These shapes are a rough estimate of where the fire could go if nothing stops it, not an official map. Follow OCFA, CAL FIRE and the Sheriff.</p>
 </section>
 <section class="leg"><h2>Streets in the updates</h2><div id="legend"></div><p class="sub">Tap a street to zoom to it.</p>
@@ -525,7 +525,7 @@ const FRONT=[[33.477, -117.6612], [33.474, -117.6614], [33.4729, -117.6597], [33
 function drawSpread(o){try{if(!window.spreadModel||!FRONT.length||!o)return;const base={windFromDeg:o.dir??95,rhPct:o.rh??20,tempF:o.tempF??92};
  const m=spreadModel({...base,windMph:Math.max(5,o.mph||15)}),g=spreadModel({...base,windMph:Math.max(o.gust||0,o.mph||15)});
  spreadLayer.clearLayers();
- const iso=isochrones(FRONT,m,[3,2,1]);iso.forEach(i=>L.polygon(i.polygon,{color:'#f76b15',weight:1,fillColor:'#f76b15',fillOpacity:i.hour===1?.22:i.hour===2?.13:.07,interactive:true}).bindTooltip(`+${i.hour} h at ${Math.round(o.mph)} mph sustained · head run ${i.headRunMiles.toFixed(1)} mi`,{className:'lbl',sticky:true}).addTo(spreadLayer));
+ const iso=isochrones(FRONT,m,[3,2,1]);iso.forEach(i=>L.polygon(i.polygon,{color:'#f76b15',weight:1,fillColor:'#f76b15',fillOpacity:i.hour===1?.22:i.hour===2?.13:.07,interactive:true}).bindTooltip(`+${i.hour} h at ${Math.round(o.mph)} mph sustained · head run ${i.headRunMiles.toFixed(1)} mi · see methodology`,{className:'lbl',sticky:true}).addTo(spreadLayer));
  if(o.gust&&o.gust>o.mph){const gi=isochrones(FRONT,g,[1])[0];L.polygon(gi.polygon,{color:'#ffb366',weight:2,dashArray:'5 5',fill:false}).bindTooltip(`+1 h if gusts of ${Math.round(o.gust)} mph hold · head run ${gi.headRunMiles.toFixed(1)} mi`,{className:'lbl',sticky:true}).addTo(spreadLayer);}
  FRONT.forEach(p=>L.circleMarker(p,{radius:4,color:'#fff',weight:1,fillColor:'#b91c1c',fillOpacity:1}).addTo(spreadLayer));
  const st=document.querySelectorAll('#spreadstats b');st[0].textContent=m.headRosMph.toFixed(1);st[1].textContent=iso.find(i=>i.hour===1).headRunMiles.toFixed(1);st[2].textContent=Math.round(m.flameLengthFt);
