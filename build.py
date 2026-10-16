@@ -178,9 +178,38 @@ guidance2=open('guidance2.html').read()
 built = now.strftime('%b %-d, %Y, %-I:%M %p PT')
 
 def li(items): return ''.join(f'<li>{i}</li>' for i in items)
+# official agency posts -> timeline
+AGENCY={'x.com/ocfireauthority':'OCFA','x.com/ocsheriff':'OC Sheriff','x.com/cityofsjc':'City of SJC','x.com/sanclementecity':'City of San Clemente','x.com/cal_fire':'CAL FIRE','x.com/caltransd12':'Caltrans','x.com/ocgov':'OC Gov','x.com/capousd':'Capistrano USD'}
+agency_tl=[]
+for _p in posts:
+    _l=(_p.get('post_link') or '').lower()
+    for k,v in AGENCY.items():
+        if k in _l and _p.get('text'):
+            agency_tl.append([datetime.datetime.fromtimestamp(_p['post_created'],PT).strftime('%-I:%M %p'), v+': '+re.sub(r'\s*https?://\S+','',_p['text']).replace('\n',' ').strip()[:300]])
+# auto change log: compare live state to last build
+try: prev=json.load(open('state_prev.json'))
+except Exception: prev={}
+cur={'acres':facts.get('acres'),'containment':facts.get('containment'),'orders':','.join(sorted(facts.get('order_zones',{}).keys())),'perim':(perim['features'][0]['properties'].get('date') if perim else None),'wd_reports':len(wd.get('reports',[]))}
+try: auto_tl=json.load(open('auto_timeline.json'))
+except Exception: auto_tl=[]
+_nowt=now.strftime('%-I:%M %p')
+if prev:
+    if prev.get('acres')!=cur['acres'] and cur['acres']: auto_tl.append([_nowt,f"Acreage updated to {cur['acres']} (Watch Duty / OCFA)."])
+    if prev.get('containment')!=cur['containment'] and cur['containment'] is not None: auto_tl.append([_nowt,f"Containment now {cur['containment']}."])
+    if prev.get('orders')!=cur['orders']: auto_tl.append([_nowt,f"Evacuation order zones now: {cur['orders'].replace(',',', ')}."])
+    if prev.get('perim')!=cur['perim'] and cur['perim']: auto_tl.append([_nowt,"New FIRIS fire perimeter mapped; map updated."])
+json.dump(cur,open('state_prev.json','w')); json.dump(auto_tl[-40:],open('auto_timeline.json','w'))
+def _dedupe(items):
+    seen=set(); out=[]
+    for t,m in items:
+        k=(t,m[:60])
+        if k in seen: continue
+        seen.add(k); out.append([t,m])
+    return out
+tl_all=_dedupe(facts['timeline']+agency_tl+auto_tl)
 def _k(t):
     h,m=t.split()[0].split(':'); h=int(h)%12+(12 if 'PM' in t else 0); return h*60+int(m)
-timeline = ''.join(f'<li><time>{t}</time><span>{html.escape(s)}</span></li>' for t,s in sorted(facts['timeline'], key=lambda x:-_k(x[0])))
+timeline = ''.join(f'<li><time>{t}</time><span>{html.escape(s)}</span></li>' for t,s in sorted(tl_all, key=lambda x:-_k(x[0])))
 zones = facts['zones']
 desc = f"Norte Fire, San Clemente and San Juan Capistrano: where Camino Las Ramblas, Via La Mirada, Avenida Calita and the other streets in the evacuation updates are, with official zone links."
 
@@ -313,7 +342,7 @@ nav.tabs{{display:none}}
 <section class="leg"><h2><span class="hi" data-ic="locate" data-col="#8ec5ff"></span>Streets in the updates</h2><div id="legend"></div><p class="sub">Tap a street to zoom to it.</p>
 {('<h3 style="margin-top:14px">Mentioned in posts, last 90 min</h3><ul class="mention">'+''.join(f'<li>{html.escape(n)}<small>{c}×'+('' if any(n.lower()==v[0].lower() for v in STREETS.values()) else ' · not on map yet')+'</small></li>' for n,c in mentions)+'</ul>') if mentions else ''}
 </section>
-<section><h2><span class="hi" data-ic="timeline" data-col="#7c8a99"></span>Timeline (PT, newest first)</h2><ul class="tl">{timeline}</ul></section>
+<section><h2><span class="hi" data-ic="timeline" data-col="#7c8a99"></span>Timeline (PT, newest first)</h2><p class="sub" style="margin:0 0 8px">Sources rechecked every 5 minutes; last check {now.strftime("%-I:%M %p")} PT. Newest Watch Duty report {html.escape(wd_reports[0][0]) if wd_reports else "none"}. Includes OCFA and agency posts, Watch Duty reports, and automatic entries when acreage, containment, zones or the perimeter change.</p><ul class="tl">{timeline}</ul></section>
 <section><h2><span class="hi" data-ic="live" data-col="#e5484d"></span>Watch Duty incident reports <small style="text-transform:none;letter-spacing:0">· <a href="https://app.watchduty.org/i/124958" target="_blank" rel="noopener">open Watch Duty</a></small></h2>
 <ul class="tl">{''.join(f'<li><time>{t}</time><span>{html.escape(m)}</span></li>' for t,m in wd_reports) or '<li><span class="sub">No reports captured yet.</span></li>'}</ul>
 <p class="sub">Verified reports from Watch Duty's reporters, mirrored as of {html.escape(datetime.datetime.fromisoformat(wd['fetched']).strftime('%-I:%M %p') if wd.get('fetched') else '')} PT{(' · incident address: '+html.escape(wd['event'].get('address') or '')) if wd.get('event',{}).get('address') else ''}.</p></section>
