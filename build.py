@@ -185,7 +185,7 @@ zones = facts['zones']
 desc = f"Norte Fire, San Clemente and San Juan Capistrano: where Camino Las Ramblas, Via La Mirada, Avenida Calita and the other streets in the evacuation updates are, with official zone links."
 
 page = f'''<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" id="vp" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Norte Fire Map: Evacuation Streets in San Juan Capistrano and San Clemente</title>
 <meta name="description" content="{desc}">
 <link rel="canonical" href="{SITE}">
@@ -217,7 +217,7 @@ header{{height:var(--hdr);display:flex;align-items:center;gap:14px;padding:0 16p
 header h1{{font-size:17px;font-weight:600}}header h1 b{{color:var(--red);font-weight:700}}
 header .upd{{margin-left:auto;color:var(--muted);font-size:12px;white-space:nowrap}}
 .layout{{display:grid;grid-template-columns:minmax(0,1fr) 400px;height:calc(100% - var(--hdr))}}
-#map{{height:100%;background:#e8e4dc}}
+#map{{height:100%;background:#e8e4dc;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overscroll-behavior:none}}
 aside{{overflow-y:auto;border-left:1px solid var(--line);background:var(--panel);padding:0 18px 40px;-webkit-overflow-scrolling:touch}}
 section{{padding:18px 0;border-bottom:1px solid var(--line)}}section:last-child{{border:0}}
 h2{{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:7px}}h2 .hi{{display:inline-flex;width:16px;height:16px;flex:none}}h2 .hi .ic{{width:16px;height:16px}}
@@ -338,7 +338,7 @@ nav.tabs{{display:none}}
 <script>
 if(window.ICONS_CSS)document.head.insertAdjacentHTML('beforeend','<style>'+ICONS_CSS+'</style>');const PAL=(window.ICONS&&ICONS.palette)||{{}};const mk=(k,c,sz)=>window.iconMarkerHTML?iconMarkerHTML(k,c,sz):'';const ic=(k,c)=>window.iconSVG?iconSVG(k,c):'';
 const GJ={jss(gj)};
-const map=L.map('map',{{zoomControl:true}}).setView([33.474,-117.650],13);
+const map=L.map('map',{{zoomControl:true,tapHold:false,bounceAtZoomLimits:false,touchZoom:true,dragging:true}}).setView([33.474,-117.650],13);
 const street=L.tileLayer('https://tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png',{{maxZoom:19,attribution:'© OpenStreetMap contributors'}}).addTo(map);
 const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{{z}}/{{y}}/{{x}}',{{maxZoom:19,attribution:'© Esri'}});
 const labels=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{{z}}/{{y}}/{{x}}',{{maxZoom:19,pane:'shadowPane'}});
@@ -456,7 +456,7 @@ document.getElementById('geo').onclick=()=>{{if(!navigator.geolocation)return sh
 document.querySelectorAll('h2 .hi, nav.tabs .hi, .notice .hi').forEach(e=>e.innerHTML=ic(e.dataset.ic,e.dataset.col));
 const BUILT_TS={int(now.timestamp())};function staleCheck(){{const m=Math.round((Date.now()/1000-BUILT_TS)/60);const el=document.getElementById('stale');if(m>45){{el.hidden=false;el.innerHTML=`This page has not been updated in over ${{m}} minutes. Check <a style="color:#ffd45c" href="https://www.ocfa.org/" target="_blank" rel="noopener">OCFA</a> and <a style="color:#ffd45c" href="https://protect.genasys.com/search" target="_blank" rel="noopener">Genasys Protect</a> for current orders.`;}}else el.hidden=true;}}staleCheck();setInterval(staleCheck,60000);
 function tabs(t){{document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));}}
-document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>{{document.body.className='tab-'+b.dataset.t;tabs(b.dataset.t);if(b.dataset.t==='map')setTimeout(()=>map.invalidateSize(),50);if(window.twttr&&twttr.widgets)twttr.widgets.load();}});
+document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>{{document.body.className='tab-'+b.dataset.t;tabs(b.dataset.t);document.getElementById('vp').setAttribute('content',b.dataset.t==='map'?'width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover':'width=device-width,initial-scale=1,viewport-fit=cover');if(b.dataset.t==='map')setTimeout(()=>map.invalidateSize(),50);if(window.twttr&&twttr.widgets)twttr.widgets.load();}});
 </script>
 <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 </body></html>'''
