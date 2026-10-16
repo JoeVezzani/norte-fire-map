@@ -174,7 +174,7 @@ nav.tabs{{display:none}}
 <a href="https://www.san-clemente.org/" target="_blank" rel="noopener">City of San Clemente</a>
 </div></section>
 <section id="posts"><h2>Latest posts <small style="text-transform:none;letter-spacing:0">· {n_posts} via LunarCrush, newest first</small></h2><div id="feed">{''.join(cards)}</div></section>
-<p class="sub">Map data © OpenStreetMap contributors. Imagery © Esri. Page rebuilt every 10 minutes while the incident is active.</p>
+<p class="sub">Map data © OpenStreetMap contributors. Imagery © Esri. Page rebuilt every 5 minutes while the incident is active.</p>
 </aside></div>
 <nav class="tabs"><button class="on" data-t="map">Map</button><button data-t="info">Streets &amp; status</button><button data-t="posts">Posts</button></nav>
 <script>
