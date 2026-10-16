@@ -248,7 +248,7 @@ header{{height:var(--hdr);display:flex;align-items:center;gap:14px;padding:0 16p
 header h1{{font-size:17px;font-weight:600}}header h1 b{{color:var(--red);font-weight:700}}
 header .upd{{margin-left:auto;color:var(--muted);font-size:12px;white-space:nowrap}}
 .layout{{display:grid;grid-template-columns:minmax(0,1fr) 400px;height:calc(100% - var(--hdr))}}
-#map{{height:100%;background:#e8e4dc;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overscroll-behavior:none}}
+#map{{height:100%;background:#1c2128;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overscroll-behavior:none}}
 aside{{overflow-y:auto;border-left:1px solid var(--line);background:var(--panel);padding:0 18px 40px;-webkit-overflow-scrolling:touch}}
 section{{padding:18px 0;border-bottom:1px solid var(--line)}}section:last-child{{border:0}}
 h2{{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:7px}}h2 .hi{{display:inline-flex;width:16px;height:16px;flex:none}}h2 .hi .ic{{width:16px;height:16px}}
@@ -370,10 +370,10 @@ nav.tabs{{display:none}}
 if(window.ICONS_CSS)document.head.insertAdjacentHTML('beforeend','<style>'+ICONS_CSS+'</style>');const PAL=(window.ICONS&&ICONS.palette)||{{}};const mk=(k,c,sz)=>window.iconMarkerHTML?iconMarkerHTML(k,c,sz):'';const ic=(k,c)=>window.iconSVG?iconSVG(k,c):'';
 const GJ={jss(gj)};
 const map=L.map('map',{{zoomControl:true,tapHold:false,bounceAtZoomLimits:false,touchZoom:true,dragging:true}}).setView([33.474,-117.650],13);
-const street=L.tileLayer('https://tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png',{{maxZoom:19,attribution:'© OpenStreetMap contributors'}}).addTo(map);
-const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{{z}}/{{y}}/{{x}}',{{maxZoom:19,attribution:'© Esri'}});
-const labels=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{{z}}/{{y}}/{{x}}',{{maxZoom:19,pane:'shadowPane'}});
-let SAT=false;map.on('baselayerchange',e=>{{ SAT=(e.name==='Satellite'); if(SAT) labels.addTo(map); else map.removeLayer(labels); zoneLayer.setStyle(zoneLayer.options.style); if(window.lastWind) drawSpread(window.lastWind); }});
+const street=L.tileLayer('https://tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png',{{maxZoom:19,attribution:'© OpenStreetMap contributors'}});
+const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{{z}}/{{y}}/{{x}}',{{maxZoom:19,attribution:'© Esri'}}).addTo(map);
+const labels=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{{z}}/{{y}}/{{x}}',{{maxZoom:19,pane:'shadowPane'}}).addTo(map);
+let SAT=true;map.on('baselayerchange',e=>{{ SAT=(e.name==='Satellite'); if(SAT) labels.addTo(map); else map.removeLayer(labels); zoneLayer.setStyle(zoneLayer.options.style); if(window.lastWind) drawSpread(window.lastWind); }});
 const evac=[[33.4645,-117.667],[33.4675,-117.670],[33.472,-117.669],[33.478,-117.666],[33.483,-117.662],[33.489,-117.650],[33.492,-117.632],[33.489,-117.621],[33.482,-117.620],[33.476,-117.628],[33.470,-117.640],[33.4655,-117.650],[33.462,-117.660]];
 const evacL=L.polygon(evac,{{color:'#e5484d',weight:2,dashArray:'6 6',fillColor:'#e5484d',fillOpacity:.10}}).bindTooltip('Requested evacuation area, approximate sketch',{{sticky:true,className:'lbl'}}).addTo(map);
 const groups={{}},byGroup={{}};
@@ -397,7 +397,7 @@ let zoneStatus={{}};const spreadLayer=L.layerGroup().addTo(map);const photoLayer
 const OVR_ORDER={jss(facts.get('order_zones',{}))},OVR_WARN={jss(facts.get('warning_zones',{}))};
 const norm=z=>String(z||'').replace(/\\s+/g,'').toUpperCase();
 function effType(p){{const z=norm(p.Evac_Area),t=p.Evac_Type||'';if(/order/i.test(t))return t;const o=Object.keys(OVR_ORDER).find(k=>norm(k)===z);if(o)return 'Evacuation Order (per '+OVR_ORDER[o]+')';if(/warning/i.test(t))return t;const w=Object.keys(OVR_WARN).find(k=>norm(k)===z);if(w)return 'Evacuation Warning (per '+OVR_WARN[w]+')';return t;}}
-L.control.layers({{'Street map':street,'Satellite':sat}},{{'Fire perimeter (FIRIS)':perimLayer,'County evacuation zones (live)':zoneLayer,'Wind spread guide (not a forecast)':spreadLayer,'Photos (Watch Duty users)':photoLayer,'Wind stations (NWS)':stnLayer,'Shelters':shelterLayer,'Posts by street':postLayer,'Road closures':closureLayer,'Streets':gl,'Radio-traffic sketch':evacL}},{{collapsed:true,position:'topright'}}).addTo(map);
+L.control.layers({{'Satellite':sat,'Street map':street}},{{'Fire perimeter (FIRIS)':perimLayer,'County evacuation zones (live)':zoneLayer,'Wind spread guide (not a forecast)':spreadLayer,'Photos (Watch Duty users)':photoLayer,'Wind stations (NWS)':stnLayer,'Shelters':shelterLayer,'Posts by street':postLayer,'Road closures':closureLayer,'Streets':gl,'Radio-traffic sketch':evacL}},{{collapsed:true,position:'topright'}}).addTo(map);
 
 async function loadZones(){{try{{
  const u=ZL+'?where=1%3D1&geometry=-117.75,33.40,-117.55,33.55&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=Evac_Area,Evac_Type,City,Area_Desc&returnGeometry=true&outSR=4326&f=geojson&_='+Date.now();
