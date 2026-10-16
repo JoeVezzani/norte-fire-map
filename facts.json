@@ -93,6 +93,10 @@
   [
    "2:15 PM",
    "ABC7: at least 4 homes destroyed in the San Clemente / San Juan Capistrano area. Not yet in an OCFA count."
+  ],
+  [
+   "2:35 PM",
+   "Broadcast video and photos show at least 8 homes destroyed. Still no official OCFA damage count."
   ]
  ],
  "order_zones": {
@@ -165,5 +169,5 @@
    "Vista Del Mar"
   ]
  },
- "damage": "At least 4 homes destroyed (ABC7, 2:15 PM; no official OCFA count yet)"
+ "damage": "At least 8 homes destroyed based on broadcast video and photos (2:35 PM); ABC7 reported at least 4 at 2:15 PM. No official OCFA count yet."
 }
