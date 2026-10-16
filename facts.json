@@ -49,6 +49,18 @@
   [
    "1:08 PM",
    "Prima Deshecha Landfill closed (OC Waste & Recycling). Homes impacted at Avenida Calita, Via La Mirada, Via De Agua."
+  ],
+  [
+   "1:27 PM",
+   "I-5 closed in both directions south of San Clemente because of the separate Henderson Fire at Camp Pendleton (CNS). Plan evacuation routes north or via Ortega Hwy/inland."
+  ],
+  [
+   "1:34 PM",
+   "Homes burning on Via La Mirada seen on live broadcast; right flank moving down toward houses (radio traffic)."
+  ],
+  [
+   "1:37 PM",
+   "Order zones restated: SCL12, SCL13, SJC04, SJC05, SJC10 (OC alert)."
   ]
  ],
  "order_zones": {
@@ -77,5 +89,13 @@
    -117.6575
   ]
  ],
- "front_note": "Active western head near Via La Mirada, Via De Agua and Avenida Calita, per 1:02 PM radio traffic"
+ "front_note": "Active western head near Via La Mirada, Via De Agua and Avenida Calita, per 1:02 PM radio traffic",
+ "live_video": {
+  "id": "XoaZgHJJfD4",
+  "label": "CBS LA live coverage"
+ },
+ "closures": [
+  "I-5 both directions south of San Clemente (Henderson Fire, Camp Pendleton)",
+  "Prima Deshecha Landfill closed"
+ ]
 }

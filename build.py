@@ -41,6 +41,7 @@ STREETS = {
  'Paseo Aliso': ('Paseo Aliso', G_THREAT),
  'Avenida Placida': ('Avenida Placida', G_THREAT),
  'Portico Del Norte': ('Portico Del Norte', G_ORIGIN),
+ 'Eminencia Del Norte': ('Eminencia Del Norte', G_ORIGIN),
  'Camino Capistrano': ('Camino Capistrano', G_REF),
  'Camino Del Avion': ('Camino Del Avion', G_REF),
  'Avenida Pico': ('Avenida Pico', G_REF),
@@ -196,6 +197,7 @@ nav.tabs{{display:none}}
 <div class="stats"><div class="stat"><b>{facts['acres']}</b><span>acres (OCFA est.)</span></div><div class="stat"><b>{facts['containment']}</b><span>containment</span></div><div class="stat"><b>{facts['started']}</b><span>started, Oct 16</span></div></div>
 <p class="sub">Evacuation <b>orders</b> (leave now):</p>
 <div class="zones" id="zones">{''.join(f'<span>{html.escape(z)}</span>' for z in zones)}</div><p class="sub" id="zonesnote">Loading live zone status from the county layer…</p>
+{('<p class="sub"><b>Road and facility closures:</b> '+' · '.join(html.escape(c) for c in facts.get('closures',[]))+'</p>') if facts.get('closures') else ''}
 <p class="sub">Per radio traffic at 1:02 PM: all streets off Camino Las Ramblas down to I-5 and around to the San Juan dump. The red and yellow zones on the map are the live county evacuation areas.</p>
 </section>
 <section>
@@ -227,7 +229,8 @@ nav.tabs{{display:none}}
 <a href="https://www.sanjuancapistrano.org/" target="_blank" rel="noopener">City of San Juan Capistrano</a>
 <a href="https://www.san-clemente.org/" target="_blank" rel="noopener">City of San Clemente</a>
 </div></section>
-<section id="posts"><h2>Latest posts <small style="text-transform:none;letter-spacing:0">· {n_posts} via LunarCrush, newest first</small></h2><div id="feed">{''.join(cards)}</div></section>
+<section id="posts"><h2>Latest posts <small style="text-transform:none;letter-spacing:0">· {n_posts} via LunarCrush, newest first</small></h2>{('<article class="post video"><div class="meta"><span>Live</span><span>'+html.escape(facts["live_video"]["label"])+'</span></div><iframe loading="lazy" src="https://www.youtube.com/embed/'+re.sub(r"[^\w-]","",facts["live_video"]["id"])+'" title="Live coverage" allowfullscreen></iframe></article>') if facts.get("live_video") else ''}
+<div id="feed">{''.join(cards)}</div></section>
 <p class="sub">Map data © OpenStreetMap contributors. Imagery © Esri. Page rebuilt every 5 minutes while the incident is active.</p>
 </aside></div>
 <nav class="tabs"><button class="on" data-t="map">Map</button><button data-t="info">Streets &amp; status</button><button data-t="posts">Posts</button></nav>
