@@ -13,6 +13,14 @@ posts = json.load(open('posts_store.json'))
 facts = json.load(open('facts.json'))
 try: wd = json.load(open('wd.json'))
 except Exception: wd = {'event':{},'data':{},'reports':[],'photos':[]}
+def J(o): return json.dumps(o).replace('<','\\u003c').replace('>','\\u003e').replace('&','\\u0026')
+def _num(v): return float(v) if isinstance(v,(int,float)) and not isinstance(v,bool) else None
+from urllib.parse import urlparse as _up
+def _ok_img(u):
+    try: pu=_up(u)
+    except Exception: return False
+    return pu.scheme=='https' and pu.netloc=='images.watchduty.org' and re.fullmatch(r'/uploads/[\w./-]+\.(jpe?g|png|webp)',pu.path or '') is not None
+_ZONE=re.compile(r'^[A-Z]{2,4}\s?\d{1,3}$')
 def _strip(h): return re.sub(r'<[^>]+>','',html.unescape(h or '')).strip()
 def _pt(iso):
     try: return datetime.datetime.fromisoformat(iso.replace('Z','+00:00')).astimezone(PT).strftime('%-I:%M %p')
