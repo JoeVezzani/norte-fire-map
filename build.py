@@ -166,6 +166,7 @@ nav.tabs{{display:none}}
 <section><h2>Timeline (PT)</h2><ul class="tl">{timeline}</ul></section>
 <section><h2>Official sources</h2><div class="links">
 <a href="https://protect.genasys.com/search" target="_blank" rel="noopener">Genasys Protect <small>zones by address</small></a>
+<a href="https://ocpw.maps.arcgis.com/apps/instant/lookup/index.html?appid=61efa4f48aaf42638d7fe59c395b4865&amp;center=-117.6429%3B33.4887&amp;level=12" target="_blank" rel="noopener">OC Public Works zone lookup <small>county evacuation map</small></a>
 <a href="https://app.watchduty.org/i/124958" target="_blank" rel="noopener">Watch Duty <small>incident 124958</small></a>
 <a href="https://www.ocfa.org/" target="_blank" rel="noopener">Orange County Fire Authority <small>ocfa.org</small></a>
 <a href="https://www.alertoc.gov/" target="_blank" rel="noopener">AlertOC <small>emergency alerts</small></a>
