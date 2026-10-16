@@ -10,9 +10,12 @@ with sync_playwright() as p:
     pg = ctx.new_page()
     def on_resp(r):
         u = r.url
-        if 'api.watchduty.org' in u and '124958' in u:
-            try: caught[u.split('?')[0] + ('?limit' if 'limit=' in u else '?latlng' if 'has_lat_lng' in u else '')] = r.json()
-            except Exception: pass
+        if 'api.watchduty.org' not in u: return
+        if not ('124958' in u or 'perimeter' in u.lower() or 'progression' in u.lower()): return
+        try: body = r.json()
+        except Exception: return
+        key = u if 'perimeter' in u.lower() else u.split('?')[0] + ('?limit' if 'limit=' in u else '?latlng' if 'has_lat_lng' in u else '')
+        caught[key] = body
     pg.on('response', on_resp)
     try:
         pg.goto('https://app.watchduty.org/i/124958', wait_until='load', timeout=60000); pg.wait_for_timeout(12000)
@@ -28,5 +31,7 @@ out = {'fetched': time.strftime('%Y-%m-%dT%H:%M'), 'event': {k: ev.get(k) for k 
        'data': {k: ev.get('data', {}).get(k) for k in ('acreage','containment','evacuation_orders','evacuation_warnings','evacuation_advisories','evacuation_notes')},
        'reports': [{'t': r.get('date_created'), 'msg': r.get('message'), 'lat': r.get('lat'), 'lng': r.get('lng'), 'media': [m.get('url') for m in (r.get('media') or []) if isinstance(m, dict) and m.get('url')]} for r in items if r.get('message')],
        'photos': [{'t': r.get('date_created'), 'lat': r.get('lat'), 'lng': r.get('lng'), 'media': [m.get('url') for m in (r.get('media') or []) if isinstance(m, dict) and m.get('url')]} for r in ph if r.get('lat') is not None]}
+perims={k:v for k,v in caught.items() if 'perimeter' in k.lower()}
+if perims: json.dump(perims, open('wd_perim.json','w'))
 json.dump(out, open('wd.json', 'w'))
 print('wd ok', out['data']['acreage'], out['data']['containment'], len(out['reports']), 'reports', len(out['photos']), 'photos')
