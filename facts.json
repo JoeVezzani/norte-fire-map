@@ -58,5 +58,24 @@
   "SCL12": "OCFA 1:04 PM",
   "SCL13": "OCFA 1:04 PM"
  },
- "warning_zones": {}
+ "warning_zones": {},
+ "front": [
+  [
+   33.477,
+   -117.6612
+  ],
+  [
+   33.474,
+   -117.6614
+  ],
+  [
+   33.4729,
+   -117.6597
+  ],
+  [
+   33.478,
+   -117.6575
+  ]
+ ],
+ "front_note": "Active western head near Via La Mirada, Via De Agua and Avenida Calita, per 1:02 PM radio traffic"
 }

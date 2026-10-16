@@ -119,6 +119,7 @@ page = f'''<!doctype html>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="spread.js?v={int(now.timestamp())}"></script>
 <style>
 :root{{--bg:#0b0d10;--panel:#12151a;--card:#171b21;--fg:#e8ebef;--muted:#8b95a3;--line:#242a33;--red:#e5484d;--orange:#f76b15;--amber:#f5b400;--gray:#7c8a99;--hdr:56px;--tabs:48px}}
 *{{box-sizing:border-box}}html,body{{height:100%}}
@@ -204,6 +205,13 @@ nav.tabs{{display:none}}
 <div class="hourly">{''.join(f'<span><em>{h["t"]}</em>{h["dir"]} {h["spd"]}</span>' for h in wind['hourly'][:8])}</div>
 <p class="sub">Forecast: NWS San Diego hourly grid. Observations: NWS stations. Temperatures {wind['obs'][0]['tempF'] if wind['obs'] and wind['obs'][0].get('tempF') else '--'}°F, humidity {wind['obs'][0]['rh'] if wind['obs'] and wind['obs'][0].get('rh') else '--'}%.</p>
 </section>
+<section>
+<h2>Predicted spread, physics estimate</h2>
+<div class="stats" id="spreadstats"><div class="stat"><b>--</b><span>head speed, mph</span></div><div class="stat"><b>--</b><span>1 hr run, miles</span></div><div class="stat"><b>--</b><span>flame length, ft</span></div></div>
+<p class="sub" id="spreadnote">Computing from live wind…</p>
+<p class="sub">Orange bands on the map are the 1, 2 and 3 hour envelopes at the current sustained wind. The dashed band is the 1 hour envelope at gust speed. Rothermel surface fire model with Scott and Burgan SH5 shrub fuel, Anderson ellipse, slope 25%. No spotting, no suppression, no wind shifts. Front assumed: {html.escape(facts.get('front_note',''))}.</p>
+<p class="sub" style="color:#f3d9a4">These shapes are a rough estimate of where the fire could go if nothing stops it, not an official map. Follow OCFA, CAL FIRE and the Sheriff.</p>
+</section>
 <section class="leg"><h2>Streets in the updates</h2><div id="legend"></div><p class="sub">Tap a street to zoom to it.</p>
 {('<h3 style="margin-top:14px">Mentioned in posts, last 90 min</h3><ul class="mention">'+''.join(f'<li>{html.escape(n)}<small>{c}×'+('' if any(n.lower()==v[0].lower() for v in STREETS.values()) else ' · not on map yet')+'</small></li>' for n,c in mentions)+'</ul>') if mentions else ''}
 </section>
@@ -249,11 +257,11 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({{'&':'&amp;','<':'&lt;','>':'
 const ZL='https://services.arcgis.com/UXmFoWC7yDHcDN5Q/arcgis/rest/services/Know_Your_Evacuation_Areas_OC_VIew/FeatureServer/0/query';
 const zoneLayer=L.geoJSON(null,{{style:f=>{{const t=effType(f.properties);const o=/order/i.test(t),w=/warning/i.test(t);return{{color:o?'#e5484d':w?'#f5b400':'#6b7684',weight:o||w?2:1,fillColor:o?'#e5484d':w?'#f5b400':'#000',fillOpacity:o?.22:w?.18:0,dashArray:o||w?null:'3 4'}};}},
  onEachFeature:(f,l)=>{{const p=f.properties;l.bindTooltip(`<b>${{esc(p.Evac_Area)}}</b><br>${{esc(effType(p))}}`,{{className:'lbl',sticky:true}});}}}}).addTo(map);
-let zoneStatus={{}};
+let zoneStatus={{}};const spreadLayer=L.layerGroup().addTo(map);
 const OVR_ORDER={json.dumps(facts.get('order_zones',{}))},OVR_WARN={json.dumps(facts.get('warning_zones',{}))};
 const norm=z=>String(z||'').replace(/\\s+/g,'').toUpperCase();
 function effType(p){{const z=norm(p.Evac_Area),t=p.Evac_Type||'';if(/order/i.test(t))return t;const o=Object.keys(OVR_ORDER).find(k=>norm(k)===z);if(o)return 'Evacuation Order (per '+OVR_ORDER[o]+')';if(/warning/i.test(t))return t;const w=Object.keys(OVR_WARN).find(k=>norm(k)===z);if(w)return 'Evacuation Warning (per '+OVR_WARN[w]+')';return t;}}
-L.control.layers({{'Street map':street,'Satellite':sat}},{{'County evacuation zones (live)':zoneLayer,'Streets':gl,'Radio-traffic sketch':evacL}},{{collapsed:window.innerWidth<900,position:'topright'}}).addTo(map);
+L.control.layers({{'Street map':street,'Satellite':sat}},{{'County evacuation zones (live)':zoneLayer,'Predicted spread (1/2/3 h)':spreadLayer,'Streets':gl,'Radio-traffic sketch':evacL}},{{collapsed:window.innerWidth<900,position:'topright'}}).addTo(map);
 
 async function loadZones(){{try{{
  const u=ZL+'?where=1%3D1&geometry=-117.75,33.40,-117.55,33.55&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=Evac_Area,Evac_Type,City,Area_Desc&returnGeometry=true&outSR=4326&f=geojson&_='+Date.now();
@@ -270,10 +278,22 @@ const WIND={json.dumps(wind['obs'][:1])};
 const WindCtl=L.Control.extend({{onAdd(){{const d=L.DomUtil.create('div','windarrow');d.id='windarrow';return d;}}}});new WindCtl({{position:'bottomleft'}}).addTo(map);
 function drawWind(o){{if(!o)return;const to=((o.dir||0)+180)%360;document.getElementById('windarrow').innerHTML=`<svg viewBox="0 0 24 24" style="transform:rotate(${{to}}deg)"><path d="M12 2l5 9h-3.5v11h-3V11H7z" fill="#8ec5ff"/></svg><span>Wind ${{Math.round(o.mph)}} mph${{o.gust?', gusts '+Math.round(o.gust):''}}<br><small style="color:#9aa4b2;font-weight:500">from ${{Math.round(o.dir)}}° · ${{esc(o.name)}}</small></span>`;}}
 drawWind(WIND[0]);
-async function liveWind(){{try{{const r=await fetch('https://api.weather.gov/stations/F1327/observations/latest',{{headers:{{'Accept':'application/geo+json'}}}});const p=(await r.json()).properties;const v=k=>(p[k]||{{}}).value;if(v('windSpeed')==null)return;const o={{dir:v('windDirection'),mph:v('windSpeed')*0.621371,gust:(v('windGust')||0)*0.621371,name:'San Clemente Pier',time:p.timestamp}};drawWind(o);
+async function liveWind(){{try{{const r=await fetch('https://api.weather.gov/stations/F1327/observations/latest',{{headers:{{'Accept':'application/geo+json'}}}});const p=(await r.json()).properties;const v=k=>(p[k]||{{}}).value;if(v('windSpeed')==null)return;const o={{dir:v('windDirection'),mph:v('windSpeed')*0.621371,gust:(v('windGust')||0)*0.621371,name:'San Clemente Pier',time:p.timestamp}};drawWind(o);o.rh=WIND[0]&&WIND[0].rh;o.tempF=WIND[0]&&WIND[0].tempF;drawSpread(o);
  const w=document.querySelector('#windnow .w');if(w)w.innerHTML=`<b>${{Math.round(o.mph)}}<small> mph</small></b><span>${{o.gust?'gusts '+Math.round(o.gust)+' mph · ':''}}from ${{Math.round(o.dir)}}° · San Clemente Pier</span>`;
  document.getElementById('windnote').textContent='Observed '+new Date(o.time).toLocaleTimeString([],{{hour:'numeric',minute:'2-digit'}})+' at San Clemente Pier. Wind is pushing the fire '+(o.dir>=45&&o.dir<=135?'west/southwest toward I-5 and the coast':'downwind')+'.';}}catch(e){{}}}}
 liveWind();setInterval(liveWind,300000);
+// ---- predicted spread isochrones
+const FRONT={json.dumps(facts.get('front',[]))};
+function drawSpread(o){{try{{if(!window.spreadModel||!FRONT.length||!o)return;const base={{windFromDeg:o.dir??95,rhPct:o.rh??20,tempF:o.tempF??92}};
+ const m=spreadModel({{...base,windMph:Math.max(5,o.mph||15)}}),g=spreadModel({{...base,windMph:Math.max(o.gust||0,o.mph||15)}});
+ spreadLayer.clearLayers();
+ const iso=isochrones(FRONT,m,[3,2,1]);iso.forEach(i=>L.polygon(i.polygon,{{color:'#f76b15',weight:1,fillColor:'#f76b15',fillOpacity:i.hour===1?.22:i.hour===2?.13:.07,interactive:true}}).bindTooltip(`+${{i.hour}} h at ${{Math.round(o.mph)}} mph sustained · head run ${{i.headRunMiles.toFixed(1)}} mi`,{{className:'lbl',sticky:true}}).addTo(spreadLayer));
+ if(o.gust&&o.gust>o.mph){{const gi=isochrones(FRONT,g,[1])[0];L.polygon(gi.polygon,{{color:'#ffb366',weight:2,dashArray:'5 5',fill:false}}).bindTooltip(`+1 h if gusts of ${{Math.round(o.gust)}} mph hold · head run ${{gi.headRunMiles.toFixed(1)}} mi`,{{className:'lbl',sticky:true}}).addTo(spreadLayer);}}
+ FRONT.forEach(p=>L.circleMarker(p,{{radius:4,color:'#fff',weight:1,fillColor:'#b91c1c',fillOpacity:1}}).addTo(spreadLayer));
+ const st=document.querySelectorAll('#spreadstats b');st[0].textContent=m.headRosMph.toFixed(1);st[1].textContent=iso.find(i=>i.hour===1).headRunMiles.toFixed(1);st[2].textContent=Math.round(m.flameLengthFt);
+ document.getElementById('spreadnote').textContent=`Wind from ${{Math.round(base.windFromDeg)}}° at ${{Math.round(o.mph)}} mph${{o.gust?', gusts '+Math.round(o.gust):''}} → fire pushed toward ${{Math.round((base.windFromDeg+180)%360)}}°. ${{m.note}}. Gust case head speed ${{g.headRosMph.toFixed(1)}} mph.`;
+}}catch(e){{document.getElementById('spreadnote').textContent='Spread model unavailable.';}}}}
+drawSpread(WIND[0]||{{dir:95,mph:17,gust:30,rh:20,tempF:93}});
 // ---- address check
 const res=document.getElementById('res');let pin;
 function show(cls,title,body){{res.hidden=false;res.className='res '+cls;res.innerHTML=`<b>${{title}}</b>${{body}}`;if(cls)res.scrollIntoView({{block:'nearest',behavior:'smooth'}});}}
