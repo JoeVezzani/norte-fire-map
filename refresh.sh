@@ -1,6 +1,12 @@
 #!/bin/zsh
 # Pull new LunarCrush posts, merge into posts_store.json, rebuild, push. Run by LaunchAgent com.joe.norte-fire-refresh every 10 min.
 cd ~/norte-fire-map || exit 1
+# single-run lock; kill a stale run older than 8 minutes
+LOCK=~/.norte-fire-refresh.lock
+if [ -d "$LOCK" ]; then
+  if [ -n "$(find "$LOCK" -maxdepth 0 -mmin +8)" ]; then pkill -f "norte-fire-map/refresh.sh" 2>/dev/null; pkill -f "wd_fetch.py" 2>/dev/null; rm -rf "$LOCK"; echo "$(date '+%F %T') killed stale run" >> ~/.norte-fire-refresh.log; else exit 0; fi
+fi
+mkdir "$LOCK" || exit 0; trap 'rm -rf "$LOCK"' EXIT
 export PATH=/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin
 K=$(security find-generic-password -a lunarcrush -s lunarcrush-api-key -w) || exit 1
 for t in "norte%20fire" "nortefire" "san%20juan%20capistrano%20fire" "san%20clemente%20fire" "camino%20las%20ramblas" "ocfa%20evacuation" "orange%20county%20fire%20evacuation" "san%20juan%20capistrano%20evacuation" "san%20clemente%20evacuation"; do
