@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Build index.html + og.png for the Norte Fire street map. Run: python3 build.py"""
-import json, html, datetime, os, re, math, io, urllib.request
+import json, html, datetime, os, re, math, io, urllib.request, urllib.parse
 from urllib.parse import urlparse
 def jss(o):
     """JSON safe for inline <script>: escape <, >, & and U+2028/2029."""
@@ -182,7 +182,7 @@ h2{{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em
 .leg li small{{margin-left:auto;color:var(--muted);font-size:12px}}
 .tl{{list-style:none;margin:0;padding:0}}.tl li{{display:grid;grid-template-columns:64px 1fr;gap:10px;padding:6px 0;font-size:13.5px;border-bottom:1px dashed var(--line)}}.tl li:last-child{{border:0}}
 .tl time{{color:var(--muted);font-variant-numeric:tabular-nums;font-size:12.5px;padding-top:1px}}
-.links{{display:grid;gap:6px}}.links a{{display:flex;justify-content:space-between;padding:10px 12px;background:var(--card);border:1px solid var(--line);border-radius:8px;color:var(--fg);text-decoration:none;font-size:14px}}.links a:hover{{border-color:#3a434f}}.links a small{{color:var(--muted)}}
+.links{{display:grid;gap:6px}}.links a{{display:flex;justify-content:space-between;padding:10px 12px;background:var(--card);border:1px solid var(--line);border-radius:8px;color:var(--fg);text-decoration:none;font-size:14px}}.links a:hover{{border-color:#3a434f}}.links a small{{color:var(--muted);text-align:right}}
 .post{{margin:10px 0;padding:10px;background:var(--card);border:1px solid var(--line);border-radius:10px;font-size:13.5px}}
 .post .meta{{display:flex;gap:10px;color:var(--muted);font-size:12px;margin-bottom:6px}}.post .meta time{{margin-left:auto;font-variant-numeric:tabular-nums}}
 .post iframe{{width:100%;aspect-ratio:16/9;border:0;border-radius:6px}}.post p{{margin:6px 0 0}}.post .out{{font-size:13px}}
@@ -225,6 +225,7 @@ nav.tabs{{display:none}}
 <div id="res" class="res" hidden></div>
 <p class="sub">Checks the live Orange County evacuation zone layer (OC Public Works). Zones are updated by OCFA and the Sheriff; this page just reads them.</p>
 </section>
+{('<section><h2>Evacuation shelters (OCFA)</h2><div class="links">'+''.join(f'<a href="https://maps.apple.com/?daddr={urllib.parse.quote(sh["addr"])}" target="_blank" rel="noopener">{html.escape(sh["name"])}<small>{html.escape(sh["addr"])} · directions</small></a>' for sh in facts.get('shelters',[]))+'</div></section>') if facts.get('shelters') else ''}
 <section>
 <h2>Status</h2>
 <div class="stats"><div class="stat"><b>{html.escape(str(facts['acres']))}</b><span>acres (OCFA est.)</span></div><div class="stat"><b>{html.escape(str(facts['containment']))}</b><span>containment</span></div><div class="stat"><b>{html.escape(str(facts['started']))}</b><span>started, Oct 16</span></div></div>
@@ -297,11 +298,11 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({{'&':'&amp;','<':'&lt;','>':'
 const ZL='https://services.arcgis.com/UXmFoWC7yDHcDN5Q/arcgis/rest/services/Know_Your_Evacuation_Areas_OC_VIew/FeatureServer/0/query';
 const zoneLayer=L.geoJSON(null,{{style:f=>{{const t=effType(f.properties);const o=/order/i.test(t),w=/warning/i.test(t);return{{color:o?'#e5484d':w?'#f5b400':'#6b7684',weight:o||w?2:1,fillColor:o?'#e5484d':w?'#f5b400':'#000',fillOpacity:o?.22:w?.18:0,dashArray:o||w?null:'3 4'}};}},
  onEachFeature:(f,l)=>{{const p=f.properties;l.bindTooltip(`<b>${{esc(p.Evac_Area)}}</b><br>${{esc(effType(p))}}`,{{className:'lbl',sticky:true}});}}}}).addTo(map);
-let zoneStatus={{}};const spreadLayer=L.layerGroup().addTo(map);const photoLayer=L.layerGroup().addTo(map);const stnLayer=L.layerGroup().addTo(map);
+let zoneStatus={{}};const spreadLayer=L.layerGroup().addTo(map);const photoLayer=L.layerGroup().addTo(map);const stnLayer=L.layerGroup().addTo(map);const shelterLayer=L.layerGroup().addTo(map);
 const OVR_ORDER={jss(facts.get('order_zones',{}))},OVR_WARN={jss(facts.get('warning_zones',{}))};
 const norm=z=>String(z||'').replace(/\\s+/g,'').toUpperCase();
 function effType(p){{const z=norm(p.Evac_Area),t=p.Evac_Type||'';if(/order/i.test(t))return t;const o=Object.keys(OVR_ORDER).find(k=>norm(k)===z);if(o)return 'Evacuation Order (per '+OVR_ORDER[o]+')';if(/warning/i.test(t))return t;const w=Object.keys(OVR_WARN).find(k=>norm(k)===z);if(w)return 'Evacuation Warning (per '+OVR_WARN[w]+')';return t;}}
-L.control.layers({{'Street map':street,'Satellite':sat}},{{'County evacuation zones (live)':zoneLayer,'Predicted spread (1/2/3 h)':spreadLayer,'Photos (Watch Duty users)':photoLayer,'Wind stations (NWS)':stnLayer,'Streets':gl,'Radio-traffic sketch':evacL}},{{collapsed:true,position:'topright'}}).addTo(map);
+L.control.layers({{'Street map':street,'Satellite':sat}},{{'County evacuation zones (live)':zoneLayer,'Predicted spread (1/2/3 h)':spreadLayer,'Photos (Watch Duty users)':photoLayer,'Wind stations (NWS)':stnLayer,'Shelters':shelterLayer,'Streets':gl,'Radio-traffic sketch':evacL}},{{collapsed:true,position:'topright'}}).addTo(map);
 
 async function loadZones(){{try{{
  const u=ZL+'?where=1%3D1&geometry=-117.75,33.40,-117.55,33.55&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=Evac_Area,Evac_Type,City,Area_Desc&returnGeometry=true&outSR=4326&f=geojson&_='+Date.now();
@@ -322,6 +323,9 @@ async function liveWind(){{try{{const r=await fetch('https://api.weather.gov/sta
  const w=document.querySelector('#windnow .w');if(w)w.innerHTML=`<b>${{Math.round(o.mph)}}<small> mph</small></b><span>${{o.gust?'gusts '+Math.round(o.gust)+' mph · ':''}}from ${{Math.round(o.dir)}}° · San Clemente Pier</span>`;
  document.getElementById('windnote').textContent='Observed '+new Date(o.time).toLocaleTimeString([],{{hour:'numeric',minute:'2-digit'}})+' at San Clemente Pier. Wind is pushing the fire '+(o.dir>=45&&o.dir<=135?'west/southwest toward I-5 and the coast':'downwind')+'.';}}catch(e){{}}}}
 liveWind();setInterval(liveWind,300000);
+// ---- shelters
+const SHELTERS={J([{'name':sh['name'][:80],'addr':sh['addr'][:120],'lat':_num(sh['lat']),'lng':_num(sh['lng'])} for sh in facts.get('shelters',[]) if _num(sh.get('lat')) is not None])};
+SHELTERS.forEach(sh=>shelterLayer.addLayer(L.marker([sh.lat,sh.lng],{{icon:L.divIcon({{className:'',iconSize:[30,30],iconAnchor:[15,15],html:'<div style="width:30px;height:30px;border-radius:8px;background:#1f8a4c;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 3l9 8h-3v9h-5v-6h-2v6H6v-9H3z" fill="#fff"/></svg></div>'}}),zIndexOffset:600}}).bindTooltip('Shelter: '+esc(sh.name),{{className:'lbl',direction:'top',offset:[0,-14]}}).bindPopup(`<div style="font:13px Inter,sans-serif;color:#222"><b>Evacuation shelter</b><br>${{esc(sh.name)}}<br>${{esc(sh.addr)}}<br><a href="https://maps.apple.com/?daddr=${{encodeURIComponent(sh.addr)}}" target="_blank" rel="noopener">Directions</a></div>`)));
 // ---- NWS wind stations on the map
 const STN={{F1327:{{n:'San Clemente Pier',ll:[33.41917,-117.621]}},CAPC1:{{n:'Bell Canyon RAWS',ll:[33.55183,-117.57294]}},ORTSD:{{n:'Ortega RAWS',ll:[33.56957,-117.51384]}},E3225:{{n:'Laguna Hills',ll:[33.61567,-117.74033]}}}};
 const stnMk={{}};

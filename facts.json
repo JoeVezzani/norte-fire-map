@@ -77,6 +77,14 @@
   [
    "1:54 PM",
    "Units requested to La Novia Ave and Via Cerro Rebal for an immediate structure threat; additional resource request placed (radio traffic via Watch Duty)."
+  ],
+  [
+   "1:54 PM",
+   "Road closure requested: Avenida La Pata southbound, Ortega Hwy to Avenida Vista Hermosa. Resource order: 50 type-1 engines, 15 type-3 engines, 3 hand crews, 6 dozers."
+  ],
+  [
+   "2:06 PM",
+   "Evacuation shelters open: San Juan Capistrano Community Center (25925 Camino del Avion) and San Clemente Community Center (100 Calle Seville), per OCFA."
   ]
  ],
  "order_zones": {
@@ -103,17 +111,36 @@
   [
    33.478,
    -117.6575
+  ],
+  [
+   33.4885,
+   -117.6485
   ]
  ],
- "front_note": "Active western head near Via La Mirada, Via De Agua and Avenida Calita, per 1:02 PM radio traffic",
+ "front_note": "Western head near Via La Mirada, Via De Agua and Avenida Calita (1:02 PM radio traffic) plus the north flank at Via Cerro Rebal (1:54 PM)",
  "live_video": {
   "id": "XoaZgHJJfD4",
   "label": "CBS LA live coverage"
  },
  "closures": [
+  "Avenida La Pata southbound closed between Ortega Hwy and Avenida Vista Hermosa (requested 1:54 PM)",
   "Nine Capistrano Unified schools dismissing early (check school messages)",
   "I-5 hard closure requested from San Juan Creek Rd to Camino De Los Mares (radio traffic 1:29 PM)",
   "I-5 closed both directions south of San Clemente (Henderson Fire, Camp Pendleton)",
   "Prima Deshecha Landfill closed"
+ ],
+ "shelters": [
+  {
+   "name": "San Juan Capistrano Community Center",
+   "addr": "25925 Camino del Avion, San Juan Capistrano",
+   "lat": 33.48801,
+   "lng": -117.67782
+  },
+  {
+   "name": "San Clemente Community Center",
+   "addr": "100 N Calle Seville, San Clemente",
+   "lat": 33.42408,
+   "lng": -117.61793
+  }
  ]
 }
