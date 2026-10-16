@@ -107,7 +107,7 @@ header{{height:var(--hdr);display:flex;align-items:center;gap:14px;padding:0 16p
 header h1{{font-size:17px;font-weight:600}}header h1 b{{color:var(--red);font-weight:700}}
 header .upd{{margin-left:auto;color:var(--muted);font-size:12px;white-space:nowrap}}
 .layout{{display:grid;grid-template-columns:minmax(0,1fr) 400px;height:calc(100% - var(--hdr))}}
-#map{{height:100%;background:#000}}
+#map{{height:100%;background:#e8e4dc}}
 aside{{overflow-y:auto;border-left:1px solid var(--line);background:var(--panel);padding:0 18px 40px;-webkit-overflow-scrolling:touch}}
 section{{padding:18px 0;border-bottom:1px solid var(--line)}}section:last-child{{border:0}}
 h2{{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px}}
@@ -178,16 +178,16 @@ nav.tabs{{display:none}}
 <script>
 const GJ={json.dumps(gj)};
 const map=L.map('map',{{zoomControl:true}}).setView([33.474,-117.650],13);
-const street=L.tileLayer('https://{{s}}.basemaps.cartocdn.com/dark_all/{{z}}/{{x}}/{{y}}{{r}}.png',{{maxZoom:19,attribution:'© OpenStreetMap, © CARTO'}}).addTo(map);
+const street=L.tileLayer('https://tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png',{{maxZoom:19,attribution:'© OpenStreetMap contributors'}}).addTo(map);
 const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{{z}}/{{y}}/{{x}}',{{maxZoom:19,attribution:'© Esri'}});
-const labels=L.tileLayer('https://{{s}}.basemaps.cartocdn.com/dark_only_labels/{{z}}/{{x}}/{{y}}{{r}}.png',{{maxZoom:19,pane:'shadowPane'}});
+const labels=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{{z}}/{{y}}/{{x}}',{{maxZoom:19,pane:'shadowPane'}});
 map.on('baselayerchange',e=>{{ if(e.name==='Satellite') labels.addTo(map); else map.removeLayer(labels); }});
 const evac=[[33.4645,-117.667],[33.4675,-117.670],[33.472,-117.669],[33.478,-117.666],[33.483,-117.662],[33.489,-117.650],[33.492,-117.632],[33.489,-117.621],[33.482,-117.620],[33.476,-117.628],[33.470,-117.640],[33.4655,-117.650],[33.462,-117.660]];
 const evacL=L.polygon(evac,{{color:'#e5484d',weight:2,dashArray:'6 6',fillColor:'#e5484d',fillOpacity:.10}}).bindTooltip('Requested evacuation area, approximate sketch',{{sticky:true,className:'lbl'}}).addTo(map);
 const groups={{}},byGroup={{}};
 const gl=L.geoJSON(GJ,{{style:f=>({{color:f.properties.color,weight:f.geometry.type==='Polygon'?2:5,opacity:.95,fillOpacity:.2,lineCap:'round'}}),
  onEachFeature:(f,l)=>{{l.bindTooltip(f.properties.name,{{className:'lbl',sticky:true}});(groups[f.properties.name]=groups[f.properties.name]||[]).push(l);(byGroup[f.properties.group]=byGroup[f.properties.group]||new Set()).add(f.properties.name);}}}}).addTo(map);
-L.control.layers({{'Dark map':street,'Satellite':sat}},{{'Streets':gl,'Evacuation sketch':evacL}},{{collapsed:false,position:'topright'}}).addTo(map);
+L.control.layers({{'Street map':street,'Satellite':sat}},{{'Streets':gl,'Evacuation sketch':evacL}},{{collapsed:false,position:'topright'}}).addTo(map);
 L.control.scale({{imperial:true,metric:false}}).addTo(map);
 const ORDER={json.dumps([G_ORIGIN,G_IMPACT,G_THREAT,G_ORDER,G_REF])},COL={json.dumps(COLORS)},MISS={json.dumps([STREETS[m][0] for m in missing])};
 const leg=document.getElementById('legend');
@@ -218,11 +218,11 @@ try:
     for tx in range(int(ox//256), int((ox+W)//256)+1):
         for ty in range(int(oy//256), int((oy+H)//256)+1):
             try:
-                req=urllib.request.Request(f'https://a.basemaps.cartocdn.com/dark_all/{Z}/{tx}/{ty}.png',headers={'User-Agent':'norte-fire-map og builder'})
+                req=urllib.request.Request(f'https://tile.openstreetmap.org/{Z}/{tx}/{ty}.png',headers={'User-Agent':'norte-fire-map og builder'})
                 tile=Image.open(io.BytesIO(urllib.request.urlopen(req,timeout=10).read())).convert('RGB')
                 img.paste(tile,(int(tx*256-ox),int(ty*256-oy)))
             except Exception as ex: pass
-    img=Image.blend(img, Image.new('RGB',(W,H),(11,13,16)), 0.25)
+    img=Image.blend(img, Image.new('RGB',(W,H),(11,13,16)), 0.55)
     d=ImageDraw.Draw(img,'RGBA')
     def px(lon,lat): x,y=t2p(lat,lon); return (x*256-ox, y*256-oy)
     pts=[px(lon,lat) for lat,lon in [[33.4645,-117.667],[33.4675,-117.670],[33.472,-117.669],[33.478,-117.666],[33.483,-117.662],[33.489,-117.650],[33.492,-117.632],[33.489,-117.621],[33.482,-117.620],[33.476,-117.628],[33.470,-117.640],[33.4655,-117.650],[33.462,-117.660]]]
@@ -237,12 +237,14 @@ try:
             try: return ImageFont.truetype(p,sz,index=1 if bold and p.endswith('ttc') else 0)
             except Exception: pass
         return ImageFont.load_default()
-    d.rectangle([0,H-150,W,H],fill=(11,13,16,225))
-    d.text((40,H-128),'Norte Fire',font=font(54,True),fill=(229,72,77))
-    d.text((40+d.textlength('Norte Fire',font=font(54,True))+18,H-118),'evacuation street map',font=font(40),fill=(232,235,239))
-    d.text((40,H-56),f"San Juan Capistrano · San Clemente · {facts['acres']} acres · {facts['containment']} contained · updated {now.strftime('%-I:%M %p')} PT",font=font(22),fill=(139,149,163))
-    lx=W-40
-    for g in [G_REF,G_ORDER,G_THREAT,G_IMPACT,G_ORIGIN][::-1]:
-        tw=d.textlength(g,font=font(20)); lx-=tw; d.text((lx,H-126),g,font=font(20),fill=(232,235,239)); lx-=26; d.rectangle([lx,H-118,lx+16,H-106],fill=hexrgb(COLORS[g])); lx-=28
+    d.rectangle([0,H-130,W,H],fill=(11,13,16,230))
+    d.text((40,H-112),'Norte Fire',font=font(50,True),fill=(229,72,77))
+    d.text((40+d.textlength('Norte Fire',font=font(50,True))+16,H-104),'evacuation street map',font=font(38),fill=(232,235,239))
+    d.text((40,H-46),f"San Juan Capistrano and San Clemente  |  {facts['acres']} acres  |  {facts['containment']} contained  |  updated {now.strftime('%-I:%M %p')} PT",font=font(21),fill=(139,149,163))
+    # legend chip top-right
+    rows=[G_ORIGIN,G_IMPACT,G_THREAT,G_ORDER]; bw=270; bh=26*len(rows)+20
+    d.rounded_rectangle([W-40-bw,28,W-40,28+bh],radius=10,fill=(11,13,16,215))
+    for i,g in enumerate(rows):
+        y=28+12+i*26; d.rectangle([W-40-bw+14,y+4,W-40-bw+30,y+18],fill=hexrgb(COLORS[g])); d.text((W-40-bw+40,y),g,font=font(19),fill=(232,235,239))
     img.save('og.png',optimize=True); print('og.png written')
 except Exception as ex: print('og failed', ex)
