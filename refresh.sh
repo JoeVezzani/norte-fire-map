@@ -6,6 +6,29 @@ K=$(security find-generic-password -a lunarcrush -s lunarcrush-api-key -w) || ex
 for t in "norte%20fire" "nortefire" "san%20juan%20capistrano%20fire" "san%20clemente%20fire" "camino%20las%20ramblas" "ocfa%20evacuation" "orange%20county%20fire%20evacuation" "san%20juan%20capistrano%20evacuation" "san%20clemente%20evacuation"; do
   curl -s -m 30 -A "Mozilla/5.0 curl" "https://lunarcrush.com/api4/public/searches/search?term=$t" -H "Authorization: Bearer $K" -o "lc_raw_$t.json"
 done
+curl -s -m 30 -A "Mozilla/5.0 curl" "https://lunarcrush.com/api4/public/topic/lc1szJGR3e/posts/v1" -H "Authorization: Bearer $K" -o lc_raw_topic.json
+# NWS wind: observations from nearby stations + hourly forecast
+UA="norte-fire-map (joevezzani@gmail.com)"
+python3 -I - "$UA" <<'PY'
+import json,sys,urllib.request,datetime
+UA=sys.argv[1]
+def get(u):
+    try: return json.load(urllib.request.urlopen(urllib.request.Request(u,headers={'User-Agent':UA,'Accept':'application/geo+json'}),timeout=20))
+    except Exception as e: return None
+out={'fetched':datetime.datetime.now().isoformat(timespec='minutes'),'obs':[],'hourly':[]}
+for sid,name in [('F1327','San Clemente Pier'),('CAPC1','Bell Canyon'),('ORTSD','Ortega'),('E3225','Laguna Hills')]:
+    d=get(f'https://api.weather.gov/stations/{sid}/observations/latest')
+    if not d: continue
+    pr=d['properties']; v=lambda k:(pr.get(k) or {}).get('value')
+    if v('windSpeed') is None: continue
+    out['obs'].append({'id':sid,'name':name,'time':pr['timestamp'],'dir':v('windDirection'),'mph':round(v('windSpeed')*0.621371,1),'gust':round((v('windGust') or 0)*0.621371,1) or None,'tempF':round(v('temperature')*9/5+32) if v('temperature') is not None else None,'rh':round(v('relativeHumidity')) if v('relativeHumidity') is not None else None})
+h=get('https://api.weather.gov/gridpoints/SGX/44,50/forecast/hourly')
+if h:
+    for per in h['properties']['periods'][:12]:
+        out['hourly'].append({'t':per['startTime'][11:16],'dir':per['windDirection'],'spd':per['windSpeed'],'tempF':per['temperature'],'rh':(per.get('relativeHumidity') or {}).get('value'),'sky':per['shortForecast']})
+if out['obs'] or out['hourly']: json.dump(out,open('wind.json','w'))
+print('wind obs',len(out['obs']),'hourly',len(out['hourly']))
+PY
 python3 -I - <<'PY'
 import json,glob
 store={p['post_link']:p for p in json.load(open('posts_store.json')) if p.get('post_link')}
@@ -16,6 +39,8 @@ for f in glob.glob('lc_raw_*.json'):
     try: d=json.load(open(f)).get('data',[])
     except Exception: continue
     for p in d:
+        if not p.get('text') and p.get('post_title'): p['text']=p['post_title']
+        if not p.get('influencer_name') and p.get('creator_name'): p['influencer_name']=p['creator_name']
         t=((p.get('post_title') or '')+' '+(p.get('text') or '')).lower()
         if not any(k in t for k in kw) or any(b in t for b in bad): continue
         if 'fire' not in t and 'evacu' not in t and 'smoke' not in t: continue

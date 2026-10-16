@@ -8,6 +8,19 @@ PT = datetime.timezone(datetime.timedelta(hours=-7))
 osm = json.load(open('osm.json'))['elements']
 posts = json.load(open('posts_store.json'))
 facts = json.load(open('facts.json'))
+try: wind = json.load(open('wind.json'))
+except Exception: wind = {'obs':[],'hourly':[],'fetched':''}
+# street mentions in the last 90 minutes of posts
+import collections, time as _time
+_cut=_time.time()-5400
+_rx=re.compile(r'\b((?:camino|avenida|via|calle|paseo|rancho|ortega|del)\s+(?:de\s+|la\s+|el\s+|las\s+|los\s+|del\s+)?[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)',re.I)
+_cnt=collections.Counter()
+for _p in posts:
+    if _p.get('post_created',0)<_cut: continue
+    for m in _rx.findall(_p.get('text') or ''):
+        n=' '.join(w.capitalize() if w.lower() not in ('de','la','el','las','los','del') else w.lower() for w in m.split())
+        if len(n)>8 and not re.search(r'(Fire|Norte Fire|Santa Ana|Orange|County|San Juan|San Clemente|Capistrano|Watch|Duty|Zone|Zones)$',n): _cnt[n]+=1
+mentions=[(n,c) for n,c in _cnt.most_common(12) if c>=2]
 
 # ---- layers: key -> label, group, color
 G_ORDER, G_IMPACT, G_THREAT, G_ORIGIN, G_REF = 'Evacuation boundary', 'Homes impacted', 'Structures threatened', 'Fire origin area', 'Reference'
@@ -93,7 +106,7 @@ page = f'''<!doctype html>
 <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Norte Fire: where the evacuation streets are">
 <meta name="twitter:description" content="{desc}"><meta name="twitter:image" content="{SITE}og.png?v={int(now.timestamp())}">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://platform.twitter.com https://cdn.syndication.twimg.com; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com https://platform.twitter.com; font-src https://fonts.gstatic.com; img-src * data: blob:; connect-src https://services.arcgis.com https://geocode.arcgis.com https://platform.twitter.com https://cdn.syndication.twimg.com https://api.twitter.com https://syndication.twitter.com; frame-src https://www.youtube.com https://platform.twitter.com https://syndication.twitter.com; child-src https://www.youtube.com https://platform.twitter.com https://syndication.twitter.com; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://platform.twitter.com https://cdn.syndication.twimg.com; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com https://platform.twitter.com; font-src https://fonts.gstatic.com; img-src * data: blob:; connect-src https://services.arcgis.com https://geocode.arcgis.com https://api.weather.gov https://platform.twitter.com https://cdn.syndication.twimg.com https://api.twitter.com https://syndication.twitter.com; frame-src https://www.youtube.com https://platform.twitter.com https://syndication.twitter.com; child-src https://www.youtube.com https://platform.twitter.com https://syndication.twitter.com; base-uri 'self'; form-action 'self'">
 <meta name="theme-color" content="#0b0d10">
 <link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="manifest" href="site.webmanifest">
 <meta name="apple-mobile-web-app-title" content="Norte Fire"><meta name="geo.region" content="US-CA"><meta name="geo.placename" content="San Juan Capistrano, California">
@@ -145,6 +158,10 @@ h2{{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em
 .res{{margin-top:10px;padding:12px 14px;border-radius:10px;font-size:14px;border:1px solid var(--line);background:var(--card)}}.res b{{display:block;font-family:"Inter Tight",sans-serif;font-size:18px;margin-bottom:2px}}
 .res.order{{background:#3a1215;border-color:#8a2a30}}.res.order b{{color:#ff8a8f}}.res.warn{{background:#3a2d08;border-color:#8a6a12}}.res.warn b{{color:#ffd45c}}.res.ok{{background:#0f2a1a;border-color:#1f6b3a}}.res.ok b{{color:#6fdc8c}}
 .zones span.warn{{background:#2a2208;border-color:#5a4a12;color:#ffd45c}}
+#windnow{{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}}.w{{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px}}.w b{{display:block;font-family:"Inter Tight",sans-serif;font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}}.w b small{{font-size:12px;color:var(--muted);font-weight:500}}.w span{{font-size:11.5px;color:var(--muted);display:block;line-height:1.35}}
+.hourly{{display:flex;gap:6px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none}}.hourly span{{flex:none;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:12px;white-space:nowrap}}.hourly em{{display:block;font-style:normal;color:var(--muted);font-size:11px}}
+.mention{{list-style:none;margin:0;padding:0}}.mention li{{display:flex;padding:5px 0 5px 20px;font-size:14px;color:#cfd6de}}.mention li small{{margin-left:auto;color:var(--muted);font-size:12px}}
+.windarrow{{background:rgba(11,13,16,.85);color:#fff;border-radius:8px;padding:8px 10px;font:600 12px Inter,sans-serif;display:flex;align-items:center;gap:8px}}.windarrow svg{{width:28px;height:28px}}
 nav.tabs{{display:none}}
 @media (max-width:900px){{
  .layout{{display:block;height:auto}}
@@ -176,7 +193,16 @@ nav.tabs{{display:none}}
 <div class="zones" id="zones">{''.join(f'<span>{html.escape(z)}</span>' for z in zones)}</div><p class="sub" id="zonesnote">Loading live zone status from the county layer…</p>
 <p class="sub">Per radio traffic at 1:02 PM: all streets off Camino Las Ramblas down to I-5 and around to the San Juan dump. The red and yellow zones on the map are the live county evacuation areas.</p>
 </section>
-<section class="leg"><h2>Streets in the updates</h2><div id="legend"></div><p class="sub">Tap a street to zoom to it.</p></section>
+<section>
+<h2>Wind now</h2>
+<div id="windnow">{''.join(f'<div class="w"><b>{o["mph"]:.0f}<small> mph</small></b><span>{"gusts "+str(round(o["gust"]))+" mph · " if o.get("gust") else ""}from {o["dir"]:.0f}° · {o["name"]}</span></div>' for o in wind['obs'][:3])}</div>
+<p class="sub" id="windnote">{('Observed '+wind['obs'][0]['time'][11:16]+' UTC at '+wind['obs'][0]['name']+'. Wind is pushing the fire '+('west/southwest toward I-5 and the coast' if wind['obs'] and 45<=(wind['obs'][0]['dir'] or 90)<=135 else 'downwind')+'.') if wind['obs'] else 'Wind data loading…'}</p>
+<div class="hourly">{''.join(f'<span><em>{h["t"]}</em>{h["dir"]} {h["spd"]}</span>' for h in wind['hourly'][:8])}</div>
+<p class="sub">Forecast: NWS San Diego hourly grid. Observations: NWS stations. Temperatures {wind['obs'][0]['tempF'] if wind['obs'] and wind['obs'][0].get('tempF') else '--'}°F, humidity {wind['obs'][0]['rh'] if wind['obs'] and wind['obs'][0].get('rh') else '--'}%.</p>
+</section>
+<section class="leg"><h2>Streets in the updates</h2><div id="legend"></div><p class="sub">Tap a street to zoom to it.</p>
+{('<h3 style="margin-top:14px">Mentioned in posts, last 90 min</h3><ul class="mention">'+''.join(f'<li>{html.escape(n)}<small>{c}×'+('' if any(n.lower()==v[0].lower() for v in STREETS.values()) else ' · not on map yet')+'</small></li>' for n,c in mentions)+'</ul>') if mentions else ''}
+</section>
 <section><h2>Timeline (PT, newest first)</h2><ul class="tl">{timeline}</ul></section>
 <section><h2>Official sources</h2><div class="links">
 <a href="https://protect.genasys.com/search" target="_blank" rel="noopener">Genasys Protect <small>zones by address</small></a>
@@ -235,6 +261,15 @@ async function loadZones(){{try{{
  document.getElementById('zonesnote').textContent='County zone layer plus OCFA announcements, checked '+new Date().toLocaleTimeString([],{{hour:'numeric',minute:'2-digit'}})+'. Red = order (leave now), yellow = warning (be ready).';
 }}catch(e){{document.getElementById('zonesnote').textContent='Could not reach the county zone layer; showing last known zones. Use the OC zone map link below.';}}}}
 loadZones();setInterval(loadZones,120000);
+// ---- wind arrow (direction the wind is blowing TOWARD) + live NWS refresh
+const WIND={json.dumps(wind['obs'][:1])};
+const WindCtl=L.Control.extend({{onAdd(){{const d=L.DomUtil.create('div','windarrow');d.id='windarrow';return d;}}}});new WindCtl({{position:'bottomleft'}}).addTo(map);
+function drawWind(o){{if(!o)return;const to=((o.dir||0)+180)%360;document.getElementById('windarrow').innerHTML=`<svg viewBox="0 0 24 24" style="transform:rotate(${{to}}deg)"><path d="M12 2l5 9h-3.5v11h-3V11H7z" fill="#8ec5ff"/></svg><span>Wind ${{Math.round(o.mph)}} mph${{o.gust?', gusts '+Math.round(o.gust):''}}<br><small style="color:#9aa4b2;font-weight:500">from ${{Math.round(o.dir)}}° · ${{esc(o.name)}}</small></span>`;}}
+drawWind(WIND[0]);
+async function liveWind(){{try{{const r=await fetch('https://api.weather.gov/stations/F1327/observations/latest',{{headers:{{'Accept':'application/geo+json'}}}});const p=(await r.json()).properties;const v=k=>(p[k]||{{}}).value;if(v('windSpeed')==null)return;const o={{dir:v('windDirection'),mph:v('windSpeed')*0.621371,gust:(v('windGust')||0)*0.621371,name:'San Clemente Pier',time:p.timestamp}};drawWind(o);
+ const w=document.querySelector('#windnow .w');if(w)w.innerHTML=`<b>${{Math.round(o.mph)}}<small> mph</small></b><span>${{o.gust?'gusts '+Math.round(o.gust)+' mph · ':''}}from ${{Math.round(o.dir)}}° · San Clemente Pier</span>`;
+ document.getElementById('windnote').textContent='Observed '+new Date(o.time).toLocaleTimeString([],{{hour:'numeric',minute:'2-digit'}})+' at San Clemente Pier. Wind is pushing the fire '+(o.dir>=45&&o.dir<=135?'west/southwest toward I-5 and the coast':'downwind')+'.';}}catch(e){{}}}}
+liveWind();setInterval(liveWind,300000);
 // ---- address check
 const res=document.getElementById('res');let pin;
 function show(cls,title,body){{res.hidden=false;res.className='res '+cls;res.innerHTML=`<b>${{title}}</b>${{body}}`;if(cls)res.scrollIntoView({{block:'nearest',behavior:'smooth'}});}}
