@@ -56,6 +56,7 @@ for _p in posts:
         _cnt[n]+=1
 mentions=[(n,c) for n,c in _cnt.most_common(12) if c>=2]
 
+
 # ---- layers: key -> label, group, color
 G_ORDER, G_IMPACT, G_THREAT, G_ORIGIN, G_REF = 'Evacuation boundary', 'Homes impacted', 'Structures threatened', 'Fire origin area', 'Reference'
 COLORS = {G_ORDER:'#e5484d', G_IMPACT:'#f76b15', G_THREAT:'#f5b400', G_ORIGIN:'#b91c1c', G_REF:'#7c8a99'}
@@ -123,6 +124,23 @@ for p in sorted(posts, key=lambda p: -p.get('post_created',0)):
     n_posts += 1
 now = datetime.datetime.now(PT)
 live_vid = re.sub(r'[^\w-]','',str(facts.get('live_video',{}).get('id',''))) if facts.get('live_video') else ''
+# posts pinned to the streets they name (last 3 h), keyed by the label used on the map
+_labels={v[0].lower():v[0] for v in STREETS.values()}
+_alias={'via la mirada':'Via La Mirada','via de agua':'Via De Agua','camino las ramblas':'Camino Las Ramblas','portico del norte':'Portico Del Norte','eminencia del norte':'Eminencia Del Norte','la novia':'La Novia Avenue','via cerro rebal':'Via Cerro Rebal','avenida la pata':'Avenida La Pata'}
+street_posts={}
+_cut3=_time.time()-10800
+for _p in sorted(posts,key=lambda p:-p.get('post_created',0)):
+    if _p.get('post_created',0)<_cut3: continue
+    _l=safe_link(_p.get('post_link'))
+    if not _l or '/anyuser/' in _l: continue
+    _t=(_p.get('text') or '')
+    _tl=_t.lower()
+    hit=set()
+    for k,lab in list(_labels.items())+list(_alias.items()):
+        if k in _tl: hit.add(lab)
+    for lab in hit:
+        lst=street_posts.setdefault(lab,[])
+        if len(lst)<6: lst.append({'t':datetime.datetime.fromtimestamp(_p.get('post_created',0),PT).strftime('%-I:%M %p'),'who':(_p.get('influencer_name') or re.sub(r'https?://(www\.)?(x|twitter)\.com/([^/]+)/.*',r'@\3',html.unescape(_l)))[:30],'link':html.unescape(_l),'text':_t[:140],'kind':'video' if _p.get('post_type')=='youtube-video' or 'video' in _tl or 'footage' in _tl or 'live' in _tl else 'post'})
 built = now.strftime('%b %-d, %Y, %-I:%M %p PT')
 
 def li(items): return ''.join(f'<li>{i}</li>' for i in items)
@@ -298,11 +316,11 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({{'&':'&amp;','<':'&lt;','>':'
 const ZL='https://services.arcgis.com/UXmFoWC7yDHcDN5Q/arcgis/rest/services/Know_Your_Evacuation_Areas_OC_VIew/FeatureServer/0/query';
 const zoneLayer=L.geoJSON(null,{{style:f=>{{const t=effType(f.properties);const o=/order/i.test(t),w=/warning/i.test(t);return{{color:o?'#e5484d':w?'#f5b400':'#6b7684',weight:o||w?2:1,fillColor:o?'#e5484d':w?'#f5b400':'#000',fillOpacity:o?.22:w?.18:0,dashArray:o||w?null:'3 4'}};}},
  onEachFeature:(f,l)=>{{const p=f.properties;l.bindTooltip(`<b>${{esc(p.Evac_Area)}}</b><br>${{esc(effType(p))}}`,{{className:'lbl',sticky:true}});}}}}).addTo(map);
-let zoneStatus={{}};const spreadLayer=L.layerGroup().addTo(map);const photoLayer=L.layerGroup().addTo(map);const stnLayer=L.layerGroup().addTo(map);const shelterLayer=L.layerGroup().addTo(map);
+let zoneStatus={{}};const spreadLayer=L.layerGroup().addTo(map);const photoLayer=L.layerGroup().addTo(map);const stnLayer=L.layerGroup().addTo(map);const shelterLayer=L.layerGroup().addTo(map);const postLayer=L.layerGroup().addTo(map);
 const OVR_ORDER={jss(facts.get('order_zones',{}))},OVR_WARN={jss(facts.get('warning_zones',{}))};
 const norm=z=>String(z||'').replace(/\\s+/g,'').toUpperCase();
 function effType(p){{const z=norm(p.Evac_Area),t=p.Evac_Type||'';if(/order/i.test(t))return t;const o=Object.keys(OVR_ORDER).find(k=>norm(k)===z);if(o)return 'Evacuation Order (per '+OVR_ORDER[o]+')';if(/warning/i.test(t))return t;const w=Object.keys(OVR_WARN).find(k=>norm(k)===z);if(w)return 'Evacuation Warning (per '+OVR_WARN[w]+')';return t;}}
-L.control.layers({{'Street map':street,'Satellite':sat}},{{'County evacuation zones (live)':zoneLayer,'Predicted spread (1/2/3 h)':spreadLayer,'Photos (Watch Duty users)':photoLayer,'Wind stations (NWS)':stnLayer,'Shelters':shelterLayer,'Streets':gl,'Radio-traffic sketch':evacL}},{{collapsed:true,position:'topright'}}).addTo(map);
+L.control.layers({{'Street map':street,'Satellite':sat}},{{'County evacuation zones (live)':zoneLayer,'Predicted spread (1/2/3 h)':spreadLayer,'Photos (Watch Duty users)':photoLayer,'Wind stations (NWS)':stnLayer,'Shelters':shelterLayer,'Posts by street':postLayer,'Streets':gl,'Radio-traffic sketch':evacL}},{{collapsed:true,position:'topright'}}).addTo(map);
 
 async function loadZones(){{try{{
  const u=ZL+'?where=1%3D1&geometry=-117.75,33.40,-117.55,33.55&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=Evac_Area,Evac_Type,City,Area_Desc&returnGeometry=true&outSR=4326&f=geojson&_='+Date.now();
@@ -323,6 +341,11 @@ async function liveWind(){{try{{const r=await fetch('https://api.weather.gov/sta
  const w=document.querySelector('#windnow .w');if(w)w.innerHTML=`<b>${{Math.round(o.mph)}}<small> mph</small></b><span>${{o.gust?'gusts '+Math.round(o.gust)+' mph · ':''}}from ${{Math.round(o.dir)}}° · San Clemente Pier</span>`;
  document.getElementById('windnote').textContent='Observed '+new Date(o.time).toLocaleTimeString([],{{hour:'numeric',minute:'2-digit'}})+' at San Clemente Pier. Wind is pushing the fire '+(o.dir>=45&&o.dir<=135?'west/southwest toward I-5 and the coast':'downwind')+'.';}}catch(e){{}}}}
 liveWind();setInterval(liveWind,300000);
+// ---- posts pinned to the streets they mention
+const SP={J(street_posts)};
+Object.entries(SP).forEach(([name,list])=>{{const ls=groups[name];if(!ls||!list.length)return;const b=L.featureGroup(ls).getBounds();const c=b.getCenter();const vids=list.filter(p=>p.kind==='video').length;
+ const html=`<div style="font:13px Inter,sans-serif;color:#222;max-width:280px"><b>${{esc(name)}}</b> · ${{list.length}} recent post${{list.length>1?'s':''}} naming this street<ul style="margin:6px 0 0;padding-left:16px">${{list.map(p=>`<li style="margin:3px 0"><a href="${{esc(p.link)}}" target="_blank" rel="noopener">${{esc(p.who)}}</a> <span style="color:#666">${{esc(p.t)}}${{p.kind==='video'?' · video':''}}</span><br><span style="color:#333">${{esc(p.text)}}</span></li>`).join('')}}</ul><div style="color:#666;margin-top:6px;font-size:11px">Placed at the street named in the post, not at the poster's GPS.</div></div>`;
+ postLayer.addLayer(L.marker([b.getSouth()+(b.getNorth()-b.getSouth())*0.35,c.lng],{{icon:L.divIcon({{className:'',iconSize:[0,0],html:`<div style="transform:translate(-50%,-50%);background:#fff;color:#111;border:2px solid #f76b15;border-radius:999px;padding:2px 8px;font:600 11px Inter,sans-serif;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.5)">${{vids?'▶ ':''}}${{list.length}}</div>`}}),zIndexOffset:400}}).bindTooltip('Posts naming '+esc(name),{{className:'lbl',direction:'top',offset:[0,-10]}}).bindPopup(html,{{maxWidth:320}}));}});
 // ---- shelters
 const SHELTERS={J([{'name':sh['name'][:80],'addr':sh['addr'][:120],'lat':_num(sh['lat']),'lng':_num(sh['lng'])} for sh in facts.get('shelters',[]) if _num(sh.get('lat')) is not None])};
 SHELTERS.forEach(sh=>shelterLayer.addLayer(L.marker([sh.lat,sh.lng],{{icon:L.divIcon({{className:'',iconSize:[30,30],iconAnchor:[15,15],html:'<div style="width:30px;height:30px;border-radius:8px;background:#1f8a4c;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 3l9 8h-3v9h-5v-6h-2v6H6v-9H3z" fill="#fff"/></svg></div>'}}),zIndexOffset:600}}).bindTooltip('Shelter: '+esc(sh.name),{{className:'lbl',direction:'top',offset:[0,-14]}}).bindPopup(`<div style="font:13px Inter,sans-serif;color:#222"><b>Evacuation shelter</b><br>${{esc(sh.name)}}<br>${{esc(sh.addr)}}<br><a href="https://maps.apple.com/?daddr=${{encodeURIComponent(sh.addr)}}" target="_blank" rel="noopener">Directions</a></div>`)));
