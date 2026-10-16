@@ -221,7 +221,7 @@ const zoneLayer=L.geoJSON(null,{{style:f=>{{const t=effType(f.properties);const 
  onEachFeature:(f,l)=>{{const p=f.properties;l.bindTooltip(`<b>${{esc(p.Evac_Area)}}</b><br>${{esc(effType(p))}}`,{{className:'lbl',sticky:true}});}}}}).addTo(map);
 let zoneStatus={{}};
 const OVR_ORDER={json.dumps(facts.get('order_zones',{}))},OVR_WARN={json.dumps(facts.get('warning_zones',{}))};
-const norm=z=>String(z||'').replace(/\s+/g,'').toUpperCase();
+const norm=z=>String(z||'').replace(/\\s+/g,'').toUpperCase();
 function effType(p){{const z=norm(p.Evac_Area),t=p.Evac_Type||'';if(/order/i.test(t))return t;const o=Object.keys(OVR_ORDER).find(k=>norm(k)===z);if(o)return 'Evacuation Order (per '+OVR_ORDER[o]+')';if(/warning/i.test(t))return t;const w=Object.keys(OVR_WARN).find(k=>norm(k)===z);if(w)return 'Evacuation Warning (per '+OVR_WARN[w]+')';return t;}}
 L.control.layers({{'Street map':street,'Satellite':sat}},{{'County evacuation zones (live)':zoneLayer,'Streets':gl,'Radio-traffic sketch':evacL}},{{collapsed:window.innerWidth<900,position:'topright'}}).addTo(map);
 
@@ -252,8 +252,8 @@ async function checkPoint(lat,lon,label){{
  else show('ok','Zone '+p.Evac_Area+': no evacuation in place',`<span>${{label||''}}</span><br>Status now: ${{t}}. Zones can change fast; recheck.`);
 }}
 document.getElementById('addr').addEventListener('submit',async e=>{{e.preventDefault();e.stopPropagation();const q=document.getElementById('q').value.trim();if(!q){{show('','Type a street address','Example: 27000 Via De Agua');return;}}document.getElementById('q').blur();show('','Finding address…',esc(q));
- try{{const g=await fetch('https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?f=json&maxLocations=1&outFields=Match_addr&searchExtent=-117.80,33.35,-117.50,33.65&singleLine='+encodeURIComponent(q+(/ca\b|california/i.test(q)?'':', CA')));
-  const c=((await g.json()).candidates||[])[0];if(!c||c.score<70){{show('','Address not found','Try adding the city, e.g. "123 Via De Agua, San Juan Capistrano".');return;}}
+ try{{const g=await fetch('https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?f=json&maxLocations=1&outFields=Match_addr&countryCode=USA&location=-117.65,33.48&singleLine='+encodeURIComponent(q+(/ca\b|california/i.test(q)?'':', CA')));
+  const c=((await g.json()).candidates||[])[0];if(!c||c.score<60){{show('','Address not found','Include street number, street and city, e.g. "27000 Via De Agua, San Juan Capistrano".');return;}}
   await checkPoint(+c.location.y,+c.location.x,c.address);}}catch(err){{show('','Lookup failed','Could not reach the geocoder or county layer. Use the OC zone map link below.');}}}});
 document.getElementById('geo').onclick=()=>{{if(!navigator.geolocation)return show('','Location unavailable','');show('','Getting your location…','');navigator.geolocation.getCurrentPosition(p=>checkPoint(p.coords.latitude,p.coords.longitude,'Your current location'),()=>show('','Location permission denied','Type your address instead.'),{{enableHighAccuracy:true,timeout:10000}});}};
 function tabs(t){{document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));}}
