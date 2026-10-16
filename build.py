@@ -92,6 +92,8 @@ page = f'''<!doctype html>
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Norte Fire: where the evacuation streets are">
 <meta name="twitter:description" content="{desc}"><meta name="twitter:image" content="{SITE}og.png?v={int(now.timestamp())}">
 <meta name="theme-color" content="#0b0d10">
+<link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="manifest" href="site.webmanifest">
+<meta name="apple-mobile-web-app-title" content="Norte Fire"><meta name="geo.region" content="US-CA"><meta name="geo.placename" content="San Juan Capistrano, California">
 <script type="application/ld+json">{json.dumps({"@context":"https://schema.org","@type":"WebPage","name":"Norte Fire Map","url":SITE,"description":desc,"dateModified":now.isoformat(),"about":{"@type":"Event","name":"Norte Fire","startDate":"2026-10-16T11:30:00-07:00","location":{"@type":"Place","name":"San Clemente / San Juan Capistrano, Orange County, CA"}}})}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">

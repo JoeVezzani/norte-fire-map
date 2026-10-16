@@ -3,7 +3,7 @@
 cd ~/norte-fire-map || exit 1
 export PATH=/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin
 K=$(security find-generic-password -a lunarcrush -s lunarcrush-api-key -w) || exit 1
-for t in "norte%20fire" "nortefire" "san%20juan%20capistrano%20fire" "san%20clemente%20fire"; do
+for t in "norte%20fire" "nortefire" "san%20juan%20capistrano%20fire" "san%20clemente%20fire" "camino%20las%20ramblas" "ocfa%20evacuation" "orange%20county%20fire%20evacuation" "san%20juan%20capistrano%20evacuation" "san%20clemente%20evacuation"; do
   curl -s -m 30 -A "Mozilla/5.0 curl" "https://lunarcrush.com/api4/public/searches/search?term=$t" -H "Authorization: Bearer $K" -o "lc_raw_$t.json"
 done
 python3 -I - <<'PY'
