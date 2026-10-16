@@ -76,6 +76,7 @@ STREETS = {
  'Portico Del Norte': ('Portico Del Norte', G_ORIGIN),
  'Eminencia Del Norte': ('Eminencia Del Norte', G_ORIGIN),
  'Camino Capistrano': ('Camino Capistrano', G_REF),
+ 'Avenida La Pata': ('Avenida La Pata', G_REF),
  'Camino Del Avion': ('Camino Del Avion', G_REF),
  'Avenida Pico': ('Avenida Pico', G_REF),
  'Avenida Vista Hermosa': ('Avenida Vista Hermosa', G_REF),
@@ -92,6 +93,15 @@ for e in osm:
     feats.append({'type':'Feature','properties':{'name':label,'group':grp,'color':COLORS[grp],'key':n},
                   'geometry':{'type':'Polygon' if poly else 'LineString','coordinates':[coords] if poly else coords}})
 gj = {'type':'FeatureCollection','features':feats}
+def _clip_lat(name, lo, hi):
+    out=[]
+    for e in osm:
+        if e.get('tags',{}).get('name')!=name: continue
+        seg=[[p['lon'],p['lat']] for p in e.get('geometry',[]) if lo<=p['lat']<=hi]
+        if len(seg)>=2: out.append(seg)
+    return out
+closure_lines=[{'name':'I-5 hard closure: San Juan Creek Rd to Camino De Los Mares (requested 1:29 PM)','lines':_clip_lat('San Diego Freeway',33.455,33.488)},
+               {'name':'Avenida La Pata southbound closed: Ortega Hwy to Avenida Vista Hermosa (requested 1:54 PM)','lines':_clip_lat('Avenida La Pata',33.460,33.520)}]
 found = {f['properties']['key'] for f in feats}
 missing = [k for k in STREETS if k not in found]
 
@@ -162,7 +172,7 @@ page = f'''<!doctype html>
 <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Norte Fire: where the evacuation streets are">
 <meta name="twitter:description" content="{desc}"><meta name="twitter:image" content="{SITE}og.png?v={int(now.timestamp())}">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://platform.twitter.com https://cdn.syndication.twimg.com; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com https://platform.twitter.com; font-src https://fonts.gstatic.com; img-src * data: blob:; connect-src https://services.arcgis.com https://geocode.arcgis.com https://api.weather.gov https://platform.twitter.com https://cdn.syndication.twimg.com https://api.twitter.com https://syndication.twitter.com; frame-src https://www.youtube.com https://platform.twitter.com https://syndication.twitter.com; child-src https://www.youtube.com https://platform.twitter.com https://syndication.twitter.com; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://platform.twitter.com https://cdn.syndication.twimg.com; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com https://platform.twitter.com; font-src https://fonts.gstatic.com; img-src * data: blob:; connect-src https://services.arcgis.com https://geocode.arcgis.com https://api.weather.gov https://air-quality-api.open-meteo.com https://platform.twitter.com https://cdn.syndication.twimg.com https://api.twitter.com https://syndication.twitter.com; frame-src https://www.youtube.com https://platform.twitter.com https://syndication.twitter.com; child-src https://www.youtube.com https://platform.twitter.com https://syndication.twitter.com; base-uri 'self'; form-action 'self'">
 <meta name="theme-color" content="#0b0d10">
 <link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="manifest" href="site.webmanifest">
 <meta name="apple-mobile-web-app-title" content="Norte Fire"><meta name="geo.region" content="US-CA"><meta name="geo.placename" content="San Juan Capistrano, California">
@@ -260,6 +270,7 @@ nav.tabs{{display:none}}
 <p class="sub">Purple arrows on the map sit at each NWS station and point the way the wind is blowing. Size scales with speed and the purple darkens as gusts pass 25 and 35 mph. Tap one for the raw observation.</p>
 <p class="sub" id="windnote">{('Observed '+wind['obs'][0]['time'][11:16]+' UTC at '+wind['obs'][0]['name']+'. Wind is pushing the fire '+('west/southwest toward I-5 and the coast' if wind['obs'] and 45<=(wind['obs'][0]['dir'] or 90)<=135 else 'downwind')+'.') if wind['obs'] else 'Wind data loading…'}</p>
 <div class="hourly">{''.join(f'<span><em>{h["t"]}</em>{h["dir"]} {h["spd"]}</span>' for h in wind['hourly'][:8])}</div>
+<div id="aq" class="sub" style="margin-top:10px">Air quality: loading…</div>
 <p class="sub">Forecast: NWS San Diego hourly grid. Observations: NWS stations. Temperatures {wind['obs'][0]['tempF'] if wind['obs'] and wind['obs'][0].get('tempF') else '--'}°F, humidity {wind['obs'][0]['rh'] if wind['obs'] and wind['obs'][0].get('rh') else '--'}%.</p>
 </section>
 <section>
@@ -318,11 +329,11 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({{'&':'&amp;','<':'&lt;','>':'
 const ZL='https://services.arcgis.com/UXmFoWC7yDHcDN5Q/arcgis/rest/services/Know_Your_Evacuation_Areas_OC_VIew/FeatureServer/0/query';
 const zoneLayer=L.geoJSON(null,{{style:f=>{{const t=effType(f.properties);const o=/order/i.test(t),w=/warning/i.test(t);return{{color:o?'#e5484d':w?'#f5b400':'#6b7684',weight:o||w?2:1,fillColor:o?'#e5484d':w?'#f5b400':'#000',fillOpacity:o?.22:w?.18:0,dashArray:o||w?null:'3 4'}};}},
  onEachFeature:(f,l)=>{{const p=f.properties;l.bindTooltip(`<b>${{esc(p.Evac_Area)}}</b><br>${{esc(effType(p))}}`,{{className:'lbl',sticky:true}});}}}}).addTo(map);
-let zoneStatus={{}};const spreadLayer=L.layerGroup().addTo(map);const photoLayer=L.layerGroup().addTo(map);const stnLayer=L.layerGroup().addTo(map);const shelterLayer=L.layerGroup().addTo(map);const postLayer=L.layerGroup().addTo(map);
+let zoneStatus={{}};const spreadLayer=L.layerGroup().addTo(map);const photoLayer=L.layerGroup().addTo(map);const stnLayer=L.layerGroup().addTo(map);const shelterLayer=L.layerGroup().addTo(map);const postLayer=L.layerGroup().addTo(map);const closureLayer=L.layerGroup().addTo(map);
 const OVR_ORDER={jss(facts.get('order_zones',{}))},OVR_WARN={jss(facts.get('warning_zones',{}))};
 const norm=z=>String(z||'').replace(/\\s+/g,'').toUpperCase();
 function effType(p){{const z=norm(p.Evac_Area),t=p.Evac_Type||'';if(/order/i.test(t))return t;const o=Object.keys(OVR_ORDER).find(k=>norm(k)===z);if(o)return 'Evacuation Order (per '+OVR_ORDER[o]+')';if(/warning/i.test(t))return t;const w=Object.keys(OVR_WARN).find(k=>norm(k)===z);if(w)return 'Evacuation Warning (per '+OVR_WARN[w]+')';return t;}}
-L.control.layers({{'Street map':street,'Satellite':sat}},{{'County evacuation zones (live)':zoneLayer,'Predicted spread (1/2/3 h)':spreadLayer,'Photos (Watch Duty users)':photoLayer,'Wind stations (NWS)':stnLayer,'Shelters':shelterLayer,'Posts by street':postLayer,'Streets':gl,'Radio-traffic sketch':evacL}},{{collapsed:true,position:'topright'}}).addTo(map);
+L.control.layers({{'Street map':street,'Satellite':sat}},{{'County evacuation zones (live)':zoneLayer,'Predicted spread (1/2/3 h)':spreadLayer,'Photos (Watch Duty users)':photoLayer,'Wind stations (NWS)':stnLayer,'Shelters':shelterLayer,'Posts by street':postLayer,'Road closures':closureLayer,'Streets':gl,'Radio-traffic sketch':evacL}},{{collapsed:true,position:'topright'}}).addTo(map);
 
 async function loadZones(){{try{{
  const u=ZL+'?where=1%3D1&geometry=-117.75,33.40,-117.55,33.55&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=Evac_Area,Evac_Type,City,Area_Desc&returnGeometry=true&outSR=4326&f=geojson&_='+Date.now();
@@ -348,6 +359,9 @@ const SP={J(street_posts)};
 Object.entries(SP).forEach(([name,list])=>{{const ls=groups[name];if(!ls||!list.length)return;const b=L.featureGroup(ls).getBounds();const c=b.getCenter();const vids=list.filter(p=>p.kind==='video').length;
  const html=`<div style="font:13px Inter,sans-serif;color:#222;max-width:280px"><b>${{esc(name)}}</b> · ${{list.length}} recent post${{list.length>1?'s':''}} naming this street<ul style="margin:6px 0 0;padding-left:16px">${{list.map(p=>`<li style="margin:3px 0"><a href="${{esc(p.link)}}" target="_blank" rel="noopener">${{esc(p.who)}}</a> <span style="color:#666">${{esc(p.t)}}${{p.kind==='video'?' · video':''}}</span><br><span style="color:#333">${{esc(p.text)}}</span></li>`).join('')}}</ul><div style="color:#666;margin-top:6px;font-size:11px">Placed at the street named in the post, not at the poster's GPS.</div></div>`;
  postLayer.addLayer(L.marker([b.getSouth()+(b.getNorth()-b.getSouth())*0.35,c.lng],{{icon:L.divIcon({{className:'',iconSize:[0,0],html:`<div style="transform:translate(-50%,-50%);background:#fff;color:#111;border:2px solid #f76b15;border-radius:999px;padding:2px 8px;font:600 11px Inter,sans-serif;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.5)">${{vids?'▶ ':''}}${{list.length}}</div>`}}),zIndexOffset:400}}).bindTooltip('Posts naming '+esc(name),{{className:'lbl',direction:'top',offset:[0,-10]}}).bindPopup(html,{{maxWidth:320}}));}});
+// ---- road closures
+const CLOS={J(closure_lines)};
+CLOS.forEach(c=>c.lines.forEach(seg=>{{const ll=seg.map(([x,y])=>[y,x]);closureLayer.addLayer(L.polyline(ll,{{color:'#fff',weight:9,opacity:.9,lineCap:'butt'}}));closureLayer.addLayer(L.polyline(ll,{{color:'#111',weight:5,dashArray:'10 8',opacity:.95,lineCap:'butt'}}).bindTooltip('Road closed: '+esc(c.name),{{className:'lbl',sticky:true}}));}}));
 // ---- shelters
 const SHELTERS={J([{'name':sh['name'][:80],'addr':sh['addr'][:120],'lat':_num(sh['lat']),'lng':_num(sh['lng'])} for sh in facts.get('shelters',[]) if _num(sh.get('lat')) is not None])};
 SHELTERS.forEach(sh=>shelterLayer.addLayer(L.marker([sh.lat,sh.lng],{{icon:L.divIcon({{className:'',iconSize:[30,30],iconAnchor:[15,15],html:'<div style="width:30px;height:30px;border-radius:8px;background:#1f8a4c;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 3l9 8h-3v9h-5v-6h-2v6H6v-9H3z" fill="#fff"/></svg></div>'}}),zIndexOffset:600}}).bindTooltip('Shelter: '+esc(sh.name),{{className:'lbl',direction:'top',offset:[0,-14]}}).bindPopup(`<div style="font:13px Inter,sans-serif;color:#222"><b>Evacuation shelter</b><br>${{esc(sh.name)}}<br>${{esc(sh.addr)}}<br><a href="https://maps.apple.com/?daddr=${{encodeURIComponent(sh.addr)}}" target="_blank" rel="noopener">Directions</a></div>`)));
@@ -361,6 +375,9 @@ function setStn(id,o){{const st=STN[id];if(!st||o.mph==null)return;if(stnMk[id])
 Object.entries({J({o['id']:o for o in wind['obs']})}).forEach(([id,o])=>setStn(id,o));
 async function liveStations(){{for(const id of Object.keys(STN)){{try{{const r=await fetch(`https://api.weather.gov/stations/${{id}}/observations/latest`,{{headers:{{'Accept':'application/geo+json'}}}});const p=(await r.json()).properties;const v=k=>(p[k]||{{}}).value;if(v('windSpeed')==null)continue;setStn(id,{{dir:v('windDirection'),mph:v('windSpeed')*0.621371,gust:(v('windGust')||0)*0.621371||null,tempF:v('temperature')!=null?v('temperature')*9/5+32:null,rh:v('relativeHumidity'),time:p.timestamp}});}}catch(e){{}}}}}}
 liveStations();setInterval(liveStations,300000);
+async function liveAQ(){{try{{const r=await fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude=33.477&longitude=-117.661&current=pm2_5,us_aqi&timezone=America%2FLos_Angeles');const c=(await r.json()).current;const aqi=Math.round(c.us_aqi),cat=aqi<=50?'good':aqi<=100?'moderate':aqi<=150?'unhealthy for sensitive groups':aqi<=200?'unhealthy':aqi<=300?'very unhealthy':'hazardous';
+ document.getElementById('aq').innerHTML=`<b>Air quality (regional model):</b> US AQI ${{aqi}}, ${{cat}}; PM2.5 ${{c.pm2_5}} µg/m³. This is a regional model estimate, not a smoke sensor. Downwind of the fire it is far worse: stay inside, close windows, set HVAC to recirculate, wear an N95 outdoors. <a href="https://fire.airnow.gov/" target="_blank" rel="noopener">AirNow fire and smoke map</a>`;}}catch(e){{document.getElementById('aq').innerHTML='<b>Air quality:</b> see the <a href="https://fire.airnow.gov/" target="_blank" rel="noopener">AirNow fire and smoke map</a>. Downwind of the fire: stay inside, recirculate HVAC, N95 outdoors.';}}}}
+liveAQ();setInterval(liveAQ,900000);
 // ---- Watch Duty origin + user photos
 const WDE={jss({'lat':float(wd['event']['lat']) if isinstance(wd.get('event',{}).get('lat'),(int,float)) else None,'lng':float(wd['event']['lng']) if isinstance(wd.get('event',{}).get('lng'),(int,float)) else None,'address':str(wd.get('event',{}).get('address') or '')[:120]})},WDP={jss([{'lat':float(p['lat']),'lng':float(p['lng']),'t':_pt(p['t']),'u':p['media'][0]} for p in wd_photos][:30])};
 if(WDE.lat){{L.marker([WDE.lat,WDE.lng],{{icon:L.divIcon({{className:'',html:'<div style="width:18px;height:18px;border-radius:50%;background:#b91c1c;border:3px solid #fff;box-shadow:0 0 0 4px rgba(185,28,28,.35)"></div>',iconSize:[18,18],iconAnchor:[9,9]}})}}).addTo(map).bindTooltip('Reported origin: '+esc(WDE.address||''),{{className:'lbl'}});}}
