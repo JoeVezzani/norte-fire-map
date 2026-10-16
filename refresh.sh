@@ -62,6 +62,6 @@ PY
 for u in "https://tile.openstreetmap.org/14/2838/6617.png" "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/14/6617/2838" "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"; do
   c=$(curl -s -m 15 -o /dev/null -A "Mozilla/5.0" -w "%{http_code}" "$u"); [ "$c" = "200" ] || { echo "$(date '+%F %T') PREFLIGHT FAIL $c $u" >> ~/.norte-fire-refresh.log; exit 1; }
 done
-python3 build.py || exit 1
+/Library/Frameworks/Python.framework/Versions/3.13/bin/python3 build.py || exit 1
 grep -q "tile.openstreetmap.org" index.html && [ $(stat -f%z og.png) -gt 100000 ] || { echo "$(date '+%F %T') BUILD SANITY FAIL" >> ~/.norte-fire-refresh.log; exit 1; }
 git add -A >/dev/null && git commit -qm "refresh $(date '+%m/%d %H:%M')" 2>/dev/null && { git push -q && echo "$(date '+%F %T') pushed" || echo "$(date '+%F %T') push rejected (MacBook pushed first), next run rebuilds on top"; } >> ~/.norte-fire-refresh.log

@@ -122,6 +122,7 @@ for p in sorted(posts, key=lambda p: -p.get('post_created',0)):
     else: continue
     n_posts += 1
 now = datetime.datetime.now(PT)
+live_vid = re.sub(r'[^\w-]','',str(facts.get('live_video',{}).get('id',''))) if facts.get('live_video') else ''
 built = now.strftime('%b %-d, %Y, %-I:%M %p PT')
 
 def li(items): return ''.join(f'<li>{i}</li>' for i in items)
@@ -328,7 +329,7 @@ function stnIcon(o){{const to=((o.dir||0)+180)%360,sz=26+Math.min(30,(o.mph||0)*
  return L.divIcon({{className:'',iconSize:[sz+70,sz],iconAnchor:[sz/2,sz/2],html:`<div style="display:flex;align-items:center;gap:4px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))"><svg width="${{sz}}" height="${{sz}}" viewBox="0 0 24 24" style="transform:rotate(${{to}}deg);flex:none"><path d="M12 1.5l6 10.5h-4v10.5h-4V12H6z" fill="${{col}}" stroke="#0b0d10" stroke-width="1"/></svg><span style="font:600 12px Inter,sans-serif;color:#fff;background:rgba(11,13,16,.85);padding:2px 6px;border-radius:4px;white-space:nowrap">${{Math.round(o.mph)}}<span style="font-weight:500;color:#9aa4b2"> mph</span>${{o.gust?` <span style="color:${{col}}">g${{Math.round(o.gust)}}</span>`:''}}</span></div>`}});}}
 function stnPopup(id,o){{const st=STN[id];return `<div style="font:13px Inter,sans-serif;color:#222;min-width:200px"><b>${{esc(st.n)}}</b> <span style="color:#666">(${{id}})</span><br>Wind from <b>${{Math.round(o.dir)}}°</b> at <b>${{Math.round(o.mph)}} mph</b>${{o.gust?`, gusts <b>${{Math.round(o.gust)}}</b>`:''}}<br>${{o.tempF!=null?Math.round(o.tempF)+' °F':''}}${{o.rh!=null?' · '+Math.round(o.rh)+'% RH':''}}<br><span style="color:#666">Observed ${{o.time?new Date(o.time).toLocaleTimeString([],{{hour:'numeric',minute:'2-digit'}}):''}} · NWS</span><br><a href="https://forecast.weather.gov/data/obhistory/${{id}}.html" target="_blank" rel="noopener">Station history</a></div>`;}}
 function setStn(id,o){{const st=STN[id];if(!st||o.mph==null)return;if(stnMk[id]){{stnMk[id].setIcon(stnIcon(o));stnMk[id].setPopupContent(stnPopup(id,o));}}else{{stnMk[id]=L.marker(st.ll,{{icon:stnIcon(o),zIndexOffset:500}}).bindPopup(stnPopup(id,o)).bindTooltip(esc(st.n),{{className:'lbl',direction:'bottom',offset:[0,14]}}).addTo(stnLayer);}}}}
-{J({o['id']:o for o in wind['obs']})}&&Object.entries({J({o['id']:o for o in wind['obs']})}).forEach(([id,o])=>setStn(id,o));
+Object.entries({J({o['id']:o for o in wind['obs']})}).forEach(([id,o])=>setStn(id,o));
 async function liveStations(){{for(const id of Object.keys(STN)){{try{{const r=await fetch(`https://api.weather.gov/stations/${{id}}/observations/latest`,{{headers:{{'Accept':'application/geo+json'}}}});const p=(await r.json()).properties;const v=k=>(p[k]||{{}}).value;if(v('windSpeed')==null)continue;setStn(id,{{dir:v('windDirection'),mph:v('windSpeed')*0.621371,gust:(v('windGust')||0)*0.621371||null,tempF:v('temperature')!=null?v('temperature')*9/5+32:null,rh:v('relativeHumidity'),time:p.timestamp}});}}catch(e){{}}}}}}
 liveStations();setInterval(liveStations,300000);
 // ---- Watch Duty origin + user photos
