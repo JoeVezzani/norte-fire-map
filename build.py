@@ -179,12 +179,14 @@ built = now.strftime('%b %-d, %Y, %-I:%M %p PT')
 
 def li(items): return ''.join(f'<li>{i}</li>' for i in items)
 # official agency posts -> timeline
-AGENCY={'x.com/ocfireauthority':'OCFA','x.com/ocsheriff':'OC Sheriff','x.com/cityofsjc':'City of SJC','x.com/sanclementecity':'City of San Clemente','x.com/cal_fire':'CAL FIRE','x.com/caltransd12':'Caltrans','x.com/ocgov':'OC Gov','x.com/capousd':'Capistrano USD'}
+AGENCY={'ocfireauthority':'OCFA','ocsheriff':'OC Sheriff','cityofsjc':'City of SJC','sanclementecity':'City of San Clemente','cal_fire':'CAL FIRE','caltransd12':'Caltrans','ocgov':'OC Gov','capousd':'Capistrano USD'}
 agency_tl=[]
 for _p in posts:
-    _l=(_p.get('post_link') or '').lower()
-    for k,v in AGENCY.items():
-        if k in _l and _p.get('text'):
+    _u=_up(_p.get('post_link') or '')
+    _host=(_u.hostname or '').lower().rstrip('.'); _handle=(_u.path or '').strip('/').split('/')[0].lower()
+    if _host in ('x.com','www.x.com','twitter.com','www.twitter.com') and _handle in AGENCY and re.fullmatch(r'/\w{1,15}/status/\d+/?',_u.path or '') and _p.get('text'):
+        v=AGENCY[_handle]
+        if True:
             agency_tl.append([datetime.datetime.fromtimestamp(_p['post_created'],PT).strftime('%-I:%M %p'), v+': '+re.sub(r'\s*https?://\S+','',_p['text']).replace('\n',' ').strip()[:300]])
 # auto change log: compare live state to last build
 try: prev=json.load(open('state_prev.json'))
