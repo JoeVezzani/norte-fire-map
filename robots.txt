@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://joevezzani.github.io/norte-fire-map/sitemap.xml

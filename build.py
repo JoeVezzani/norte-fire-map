@@ -1,132 +1,248 @@
 #!/usr/bin/env python3
-"""Build index.html for the Norte Fire street map. Run: python3 build.py"""
-import json, html, datetime, os, re
+"""Build index.html + og.png for the Norte Fire street map. Run: python3 build.py"""
+import json, html, datetime, os, re, math, io, urllib.request
 from urllib.parse import urlparse
-OK_HOSTS={'x.com','twitter.com','youtube.com','www.youtube.com'}
-def safe_link(u):
-    try: pu=urlparse(u)
-    except Exception: return None
-    if pu.scheme!='https' or pu.netloc.lower() not in OK_HOSTS: return None
-    return html.escape(u, quote=True)
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
+SITE = 'https://joevezzani.github.io/norte-fire-map/'
+PT = datetime.timezone(datetime.timedelta(hours=-7))
 osm = json.load(open('osm.json'))['elements']
-posts = json.load(open('posts_keep.json'))
+posts = json.load(open('posts_store.json'))
+facts = json.load(open('facts.json'))
 
-STREETS = {  # name -> (label, color, kind)
- 'Camino Las Ramblas': ('Camino Las Ramblas', '#ff3b30', 'evac boundary'),
- 'Avenida Calita': ('Avenida Calita', '#ff9500', 'homes impacted'),
- 'Via la Mirada': ('Via La Mirada', '#ff9500', 'homes impacted / structures'),
- 'Via de Agua': ('Via De Agua', '#ff9500', 'homes impacted'),
- 'Calle Esperanza': ('Calle Esperanza', '#ff9500', 'structures impacted'),
- 'Avenida California': ('Avenida California', '#ffcc00', 'structure threat'),
- 'Paseo Aliso': ('Paseo Aliso', '#ffcc00', 'structure threat'),
- 'Camino Capistrano': ('Camino Capistrano', '#5ac8fa', 'route'),
- 'San Diego Freeway': ('I-5 (San Diego Fwy)', '#8e8e93', 'evac boundary'),
- 'Prima Deshecha Landfill': ('Prima Deshecha Landfill ("San Juan dump")', '#af52de', 'evac boundary'),
+# ---- layers: key -> label, group, color
+G_ORDER, G_IMPACT, G_THREAT, G_ORIGIN, G_REF = 'Evacuation boundary', 'Homes impacted', 'Structures threatened', 'Fire origin area', 'Reference'
+COLORS = {G_ORDER:'#e5484d', G_IMPACT:'#f76b15', G_THREAT:'#f5b400', G_ORIGIN:'#b91c1c', G_REF:'#7c8a99'}
+STREETS = {
+ 'Camino Las Ramblas': ('Camino Las Ramblas', G_ORDER),
+ 'San Diego Freeway': ('Interstate 5', G_ORDER),
+ 'Prima Deshecha Landfill': ('Prima Deshecha Landfill (the "San Juan dump")', G_ORDER),
+ 'Avenida Calita': ('Avenida Calita', G_IMPACT),
+ 'Via la Mirada': ('Via La Mirada', G_IMPACT),
+ 'Via de Agua': ('Via De Agua', G_IMPACT),
+ 'Calle Esperanza': ('Calle Esperanza', G_IMPACT),
+ 'Avenida California': ('Avenida California', G_THREAT),
+ 'Paseo Aliso': ('Paseo Aliso', G_THREAT),
+ 'Avenida Placida': ('Avenida Placida', G_THREAT),
+ 'Portico Del Norte': ('Portico Del Norte', G_ORIGIN),
+ 'Camino Capistrano': ('Camino Capistrano', G_REF),
+ 'Camino Del Avion': ('Camino Del Avion', G_REF),
+ 'Avenida Pico': ('Avenida Pico', G_REF),
+ 'Avenida Vista Hermosa': ('Avenida Vista Hermosa', G_REF),
 }
 feats = []
 for e in osm:
     t = e.get('tags', {}); n = t.get('name')
     if n not in STREETS: continue
     if n == 'San Diego Freeway' and 'I 5' not in (t.get('ref') or ''): continue
-    label, color, kind = STREETS[n]
+    label, grp = STREETS[n]
     coords = [[p['lon'], p['lat']] for p in e.get('geometry', [])]
-    if not coords: continue
+    if len(coords) < 2: continue
     poly = (n == 'Prima Deshecha Landfill')
-    feats.append({'type':'Feature','properties':{'name':label,'color':color,'kind':kind,'key':n},
+    feats.append({'type':'Feature','properties':{'name':label,'group':grp,'color':COLORS[grp],'key':n},
                   'geometry':{'type':'Polygon' if poly else 'LineString','coordinates':[coords] if poly else coords}})
 gj = {'type':'FeatureCollection','features':feats}
-found = sorted({f['properties']['key'] for f in feats})
+found = {f['properties']['key'] for f in feats}
 missing = [k for k in STREETS if k not in found]
 
-posts.sort(key=lambda p: -p.get('post_created',0))
-cards = []
-for p in posts:
-    link = safe_link(p.get('post_link',''))
-    if not link: continue
-    ts = datetime.datetime.fromtimestamp(p.get('post_created',0), datetime.timezone(datetime.timedelta(hours=-7))).strftime('%-I:%M %p')
+# ---- posts
+OK_HOSTS = {'x.com','twitter.com','youtube.com','www.youtube.com','www.reddit.com','reddit.com'}
+def safe_link(u):
+    try: pu = urlparse(u or '')
+    except Exception: return None
+    if pu.scheme != 'https' or pu.netloc.lower() not in OK_HOSTS: return None
+    return html.escape(u, quote=True)
+seen=set(); cards=[]; n_posts=0
+for p in sorted(posts, key=lambda p: -p.get('post_created',0)):
+    link = safe_link(p.get('post_link'))
+    if not link or link in seen: continue
+    seen.add(link)
+    ts = datetime.datetime.fromtimestamp(p.get('post_created',0), PT).strftime('%-I:%M %p')
     who = p.get('influencer_name') or re.sub(r'https?://(www\.)?(x|twitter)\.com/([^/]+)/.*', r'@\3', link)
-    txt = html.escape((p.get('text') or '')[:400])
-    if p.get('post_type') == 'youtube-video':
-        vid = re.fullmatch(r'https://(www\.)?youtube\.com/watch\?v=([\w-]{6,20})', link); 
-        body = f'<iframe loading="lazy" src="https://www.youtube.com/embed/{vid.group(2)}" allowfullscreen></iframe>' if vid else ''
-        cards.append(f'<article class="card yt"><div class="meta">YouTube · {html.escape(who)} · {ts} PT</div>{body}<p>{txt}</p><a href="{link}" target="_blank" rel="noopener">Open on YouTube ↗</a></article>')
-    else:
+    txt = html.escape((p.get('text') or '')[:420])
+    pt = p.get('post_type')
+    if pt == 'youtube-video':
+        vid = re.fullmatch(r'https://(www\.)?youtube\.com/watch\?v=([\w-]{6,20})', link)
+        if not vid: continue
+        cards.append(f'<article class="post video"><div class="meta"><span>YouTube</span><span>{html.escape(who)}</span><time>{ts}</time></div><iframe loading="lazy" src="https://www.youtube.com/embed/{vid.group(2)}" title="Norte Fire video" allowfullscreen></iframe><p>{txt}</p></article>')
+    elif pt == 'tweet':
         if '/anyuser/' in link or not re.fullmatch(r'https://(x|twitter)\.com/\w{1,15}/status/\d+', link): continue
-        cards.append(f'<article class="card"><blockquote class="twitter-tweet" data-theme="dark" data-dnt="true"><p>{txt}</p>&mdash; {html.escape(who)} <a href="{link}">{ts} PT</a></blockquote></article>')
-built = datetime.datetime.now().strftime('%b %-d, %Y %-I:%M %p PT')
+        cards.append(f'<article class="post"><blockquote class="twitter-tweet" data-theme="dark" data-dnt="true" data-conversation="none"><p>{txt}</p>&mdash; {html.escape(who)} <a href="{link}">{ts}</a></blockquote></article>')
+    elif pt == 'reddit-post':
+        cards.append(f'<article class="post"><div class="meta"><span>Reddit</span><span>{html.escape(who)}</span><time>{ts}</time></div><p>{txt}</p><a class="out" href="{link}" target="_blank" rel="noopener">Open on Reddit</a></article>')
+    else: continue
+    n_posts += 1
+now = datetime.datetime.now(PT)
+built = now.strftime('%b %-d, %Y, %-I:%M %p PT')
+
+def li(items): return ''.join(f'<li>{i}</li>' for i in items)
+timeline = ''.join(f'<li><time>{t}</time><span>{html.escape(s)}</span></li>' for t,s in facts['timeline'])
+zones = facts['zones']
+desc = f"Norte Fire, San Clemente and San Juan Capistrano: where Camino Las Ramblas, Via La Mirada, Avenida Calita and the other streets in the evacuation updates are, with official zone links."
 
 page = f'''<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Norte Fire Street Map</title>
-<meta name="description" content="Where the Norte Fire streets are in San Juan Capistrano and the requested evacuation area. Informational only.">
-<meta name="robots" content="noindex">
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Norte Fire Map: Evacuation Streets in San Juan Capistrano and San Clemente</title>
+<meta name="description" content="{desc}">
+<link rel="canonical" href="{SITE}">
+<meta property="og:type" content="website"><meta property="og:site_name" content="Norte Fire Map">
+<meta property="og:title" content="Norte Fire: where the evacuation streets are">
+<meta property="og:description" content="{desc}">
+<meta property="og:url" content="{SITE}"><meta property="og:image" content="{SITE}og.png?v={int(now.timestamp())}">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Norte Fire: where the evacuation streets are">
+<meta name="twitter:description" content="{desc}"><meta name="twitter:image" content="{SITE}og.png?v={int(now.timestamp())}">
+<meta name="theme-color" content="#0b0d10">
+<script type="application/ld+json">{json.dumps({"@context":"https://schema.org","@type":"WebPage","name":"Norte Fire Map","url":SITE,"description":desc,"dateModified":now.isoformat(),"about":{"@type":"Event","name":"Norte Fire","startDate":"2026-10-16T11:30:00-07:00","location":{"@type":"Place","name":"San Clemente / San Juan Capistrano, Orange County, CA"}}})}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-:root{{--bg:#111;--panel:#1c1c1e;--fg:#f2f2f7;--muted:#9a9aa0;--line:#2c2c2e;--acc:#ff3b30}}
-*{{box-sizing:border-box}}body{{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 -apple-system,system-ui,Segoe UI,Roboto,sans-serif}}
-header{{padding:12px 16px;background:#000;border-bottom:1px solid var(--line)}}
-h1{{margin:0;font-size:20px}}h1 span{{color:var(--acc)}}
-.sub{{color:var(--muted);font-size:13px;margin-top:2px}}
-.warn{{background:#3a1d00;color:#ffd08a;padding:8px 16px;font-size:13px;border-bottom:1px solid #5a2e00}}
-.wrap{{display:grid;grid-template-columns:1fr 380px;height:calc(100vh - 118px)}}
-#map{{height:100%;min-height:420px}}
-aside{{overflow:auto;background:var(--panel);border-left:1px solid var(--line);padding:12px 14px}}
-h2{{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 8px}}
-.legend div{{display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer}}.legend div:hover{{color:#fff}}
-.sw{{width:22px;height:5px;border-radius:3px;flex:none}}.sw.p{{height:14px;border-radius:3px;opacity:.6}}
-.k{{color:var(--muted);font-size:12px;margin-left:auto}}
-.links a{{display:block;padding:7px 10px;margin:4px 0;background:#2c2c2e;border-radius:8px;color:#fff;text-decoration:none}}.links a:hover{{background:#3a3a3c}}
-.card{{margin:8px 0;padding:8px;background:#000;border:1px solid var(--line);border-radius:10px;font-size:13px}}
-.card iframe{{width:100%;aspect-ratio:16/9;border:0;border-radius:6px}}.meta{{color:var(--muted);font-size:12px;margin-bottom:6px}}.card a{{color:#5ac8fa}}
+:root{{--bg:#0b0d10;--panel:#12151a;--card:#171b21;--fg:#e8ebef;--muted:#8b95a3;--line:#242a33;--red:#e5484d;--orange:#f76b15;--amber:#f5b400;--gray:#7c8a99;--hdr:56px;--tabs:48px}}
+*{{box-sizing:border-box}}html,body{{height:100%}}
+body{{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 Inter,system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}}
+h1,h2,h3{{font-family:"Inter Tight",Inter,system-ui,sans-serif;letter-spacing:-.01em;margin:0}}
+a{{color:#8ec5ff}}
+header{{height:var(--hdr);display:flex;align-items:center;gap:14px;padding:0 16px;border-bottom:1px solid var(--line);background:var(--bg)}}
+header h1{{font-size:17px;font-weight:600}}header h1 b{{color:var(--red);font-weight:700}}
+header .upd{{margin-left:auto;color:var(--muted);font-size:12px;white-space:nowrap}}
+.layout{{display:grid;grid-template-columns:minmax(0,1fr) 400px;height:calc(100% - var(--hdr))}}
+#map{{height:100%;background:#000}}
+aside{{overflow-y:auto;border-left:1px solid var(--line);background:var(--panel);padding:0 18px 40px;-webkit-overflow-scrolling:touch}}
+section{{padding:18px 0;border-bottom:1px solid var(--line)}}section:last-child{{border:0}}
+h2{{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px}}
+.notice{{background:#2a1a0a;border:1px solid #4a2d0d;color:#f3d9a4;border-radius:8px;padding:10px 12px;font-size:13px;margin:14px 0 0}}
+.notice a{{color:#ffd68a}}
+.stats{{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}}
+.stat{{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px}}
+.stat b{{display:block;font-family:"Inter Tight",sans-serif;font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}}.stat span{{font-size:11px;color:var(--muted)}}
+.zones{{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}}.zones span{{background:#2a1215;border:1px solid #5a1f24;color:#ffb3b6;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:500}}
+.sub{{color:var(--muted);font-size:13px;margin:8px 0 0}}
+.leg h3{{font-size:13px;font-weight:600;margin:12px 0 4px;display:flex;align-items:center;gap:8px}}
+.leg h3 i{{width:12px;height:12px;border-radius:3px;display:inline-block}}
+.leg ul{{list-style:none;margin:0;padding:0}}
+.leg li{{padding:6px 0 6px 20px;font-size:14px;cursor:pointer;color:#cfd6de;display:flex}}.leg li:hover{{color:#fff}}.leg li.miss{{color:var(--muted);cursor:default}}
+.leg li small{{margin-left:auto;color:var(--muted);font-size:12px}}
+.tl{{list-style:none;margin:0;padding:0}}.tl li{{display:grid;grid-template-columns:64px 1fr;gap:10px;padding:6px 0;font-size:13.5px;border-bottom:1px dashed var(--line)}}.tl li:last-child{{border:0}}
+.tl time{{color:var(--muted);font-variant-numeric:tabular-nums;font-size:12.5px;padding-top:1px}}
+.links{{display:grid;gap:6px}}.links a{{display:flex;justify-content:space-between;padding:10px 12px;background:var(--card);border:1px solid var(--line);border-radius:8px;color:var(--fg);text-decoration:none;font-size:14px}}.links a:hover{{border-color:#3a434f}}.links a small{{color:var(--muted)}}
+.post{{margin:10px 0;padding:10px;background:var(--card);border:1px solid var(--line);border-radius:10px;font-size:13.5px}}
+.post .meta{{display:flex;gap:10px;color:var(--muted);font-size:12px;margin-bottom:6px}}.post .meta time{{margin-left:auto;font-variant-numeric:tabular-nums}}
+.post iframe{{width:100%;aspect-ratio:16/9;border:0;border-radius:6px}}.post p{{margin:6px 0 0}}.post .out{{font-size:13px}}
 .twitter-tweet{{margin:0!important}}
-.leaflet-tooltip.lbl{{background:rgba(0,0,0,.75);color:#fff;border:0;font-weight:600;padding:2px 6px}}
-footer{{padding:10px 16px;color:var(--muted);font-size:12px;border-top:1px solid var(--line)}}
-@media(max-width:860px){{.wrap{{grid-template-columns:1fr;height:auto}}#map{{height:62vh}}aside{{border-left:0;border-top:1px solid var(--line)}}}}
-</style></head><body>
-<header><h1><span>Norte Fire</span> street map · San Juan Capistrano / San Clemente</h1>
-<div class="sub">Where the streets named in Watch Duty updates actually are, and the requested evacuation area. Built {built}.</div></header>
-<div class="warn">Informational only, not an official source. For orders and zones use <a style="color:#ffd08a" href="https://protect.genasys.com/search" target="_blank">Genasys Protect</a>, <a style="color:#ffd08a" href="https://app.watchduty.org/i/124958" target="_blank">Watch Duty</a>, and <a style="color:#ffd08a" href="https://www.ocfa.org/" target="_blank">OCFA</a>. If you are told to leave, leave.</div>
-<div class="wrap">
-<div id="map"></div>
+.lbl{{background:rgba(11,13,16,.85);color:#fff;border:0;border-radius:4px;font:600 12px Inter,sans-serif;padding:3px 7px;box-shadow:none}}
+.lbl::before{{display:none}}
+.leaflet-control-layers{{background:var(--panel);color:var(--fg);border:1px solid var(--line)!important;border-radius:8px!important;font:13px Inter,sans-serif}}
+.leaflet-bar a{{background:var(--panel);color:var(--fg);border-color:var(--line)}}
+.leaflet-control-attribution{{background:rgba(11,13,16,.7)!important;color:var(--muted)!important;font-size:10px}}.leaflet-control-attribution a{{color:var(--muted)!important}}
+nav.tabs{{display:none}}
+@media (max-width:900px){{
+ .layout{{display:block;height:auto}}
+ #map{{height:calc(100svh - var(--hdr) - var(--tabs))}}
+ aside{{border-left:0;display:none}}
+ body.tab-info #map{{display:none}}body.tab-info aside{{display:block;min-height:calc(100svh - var(--hdr) - var(--tabs))}}
+ body.tab-posts #map{{display:none}}body.tab-posts aside{{display:block}}body.tab-posts section:not(#posts){{display:none}}
+ body.tab-info #posts{{display:none}}
+ nav.tabs{{display:grid;grid-template-columns:1fr 1fr 1fr;position:sticky;bottom:0;height:var(--tabs);background:var(--bg);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}}
+ nav.tabs button{{background:none;border:0;color:var(--muted);font:500 13px Inter,sans-serif}}nav.tabs button.on{{color:#fff;box-shadow:inset 0 2px 0 var(--red)}}
+ header h1{{font-size:15px}}header .upd{{display:none}}
+}}
+</style></head><body class="tab-map">
+<header><h1><b>Norte Fire</b> evacuation street map</h1><span class="upd">Updated {built}</span></header>
+<div class="layout">
+<div id="map" role="img" aria-label="Map of Norte Fire streets in San Juan Capistrano and San Clemente"></div>
 <aside>
-<h2>Requested evacuation (per radio traffic, 1:02 PM)</h2>
-<p style="margin:0 0 6px;font-size:13px">All streets off <b>Camino Las Ramblas</b> down to <b>I-5</b> and around to the <b>San Juan dump</b> (Prima Deshecha Landfill). The shaded red area is an approximate sketch of that description, not an official zone.</p>
-<h2>Streets in the updates (click to zoom)</h2>
-<div class="legend" id="legend"></div>
-<h2>Official resources</h2>
-<div class="links">
-<a href="https://protect.genasys.com/search" target="_blank">Genasys Protect: evacuation zones by address</a>
-<a href="https://app.watchduty.org/i/124958" target="_blank">Watch Duty incident page</a>
-<a href="https://www.ocfa.org/" target="_blank">Orange County Fire Authority</a>
-<a href="https://www.alertoc.gov/" target="_blank">AlertOC sign-up</a>
-<a href="https://quickmap.dot.ca.gov/" target="_blank">Caltrans QuickMap (I-5 status)</a>
-<a href="https://www.sanjuancapistrano.org/" target="_blank">City of San Juan Capistrano</a>
-</div>
-<h2>Social posts (via LunarCrush search)</h2>
-<div id="feed">{''.join(cards)}</div>
+<div class="notice">Informational page, not an official source. Check your address on <a href="https://protect.genasys.com/search" target="_blank" rel="noopener">Genasys Protect</a> and follow <a href="https://x.com/OCFireAuthority" target="_blank" rel="noopener">@OCFireAuthority</a>. If you are told to leave, leave.</div>
+<section>
+<h2>Status</h2>
+<div class="stats"><div class="stat"><b>{facts['acres']}</b><span>acres (OCFA est.)</span></div><div class="stat"><b>{facts['containment']}</b><span>containment</span></div><div class="stat"><b>{facts['started']}</b><span>started, Oct 16</span></div></div>
+<p class="sub">Evacuation <b>orders</b> (leave now):</p>
+<div class="zones">{''.join(f'<span>{html.escape(z)}</span>' for z in zones)}</div>
+<p class="sub">Per radio traffic at 1:02 PM: all streets off Camino Las Ramblas down to I-5 and around to the San Juan dump. The dashed red outline on the map is a sketch of that description, not an official zone.</p>
+</section>
+<section class="leg"><h2>Streets in the updates</h2><div id="legend"></div><p class="sub">Tap a street to zoom to it.</p></section>
+<section><h2>Timeline (PT)</h2><ul class="tl">{timeline}</ul></section>
+<section><h2>Official sources</h2><div class="links">
+<a href="https://protect.genasys.com/search" target="_blank" rel="noopener">Genasys Protect <small>zones by address</small></a>
+<a href="https://app.watchduty.org/i/124958" target="_blank" rel="noopener">Watch Duty <small>incident 124958</small></a>
+<a href="https://www.ocfa.org/" target="_blank" rel="noopener">Orange County Fire Authority <small>ocfa.org</small></a>
+<a href="https://www.alertoc.gov/" target="_blank" rel="noopener">AlertOC <small>emergency alerts</small></a>
+<a href="https://quickmap.dot.ca.gov/" target="_blank" rel="noopener">Caltrans QuickMap <small>I-5 closures</small></a>
+<a href="https://www.sanjuancapistrano.org/" target="_blank" rel="noopener">City of San Juan Capistrano</a>
+<a href="https://www.san-clemente.org/" target="_blank" rel="noopener">City of San Clemente</a>
+</div></section>
+<section id="posts"><h2>Latest posts <small style="text-transform:none;letter-spacing:0">· {n_posts} via LunarCrush, newest first</small></h2><div id="feed">{''.join(cards)}</div></section>
+<p class="sub">Map data © OpenStreetMap contributors. Imagery © Esri. Page rebuilt every 10 minutes while the incident is active.</p>
 </aside></div>
-<footer>Map data © OpenStreetMap contributors. Street geometry from OSM; posts from a LunarCrush custom search. Snapshot page, refresh for updates.</footer>
+<nav class="tabs"><button class="on" data-t="map">Map</button><button data-t="info">Streets &amp; status</button><button data-t="posts">Posts</button></nav>
 <script>
 const GJ={json.dumps(gj)};
-const map=L.map('map',{{zoomControl:true}}).setView([33.474,-117.655],14);
-L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png',{{maxZoom:19,attribution:'© OpenStreetMap'}}).addTo(map);
-// approximate evacuation sketch: Camino Las Ramblas corridor down to I-5, east toward the landfill
+const map=L.map('map',{{zoomControl:true}}).setView([33.474,-117.650],13);
+const street=L.tileLayer('https://{{s}}.basemaps.cartocdn.com/dark_all/{{z}}/{{x}}/{{y}}{{r}}.png',{{maxZoom:19,attribution:'© OpenStreetMap, © CARTO'}}).addTo(map);
+const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{{z}}/{{y}}/{{x}}',{{maxZoom:19,attribution:'© Esri'}});
+const labels=L.tileLayer('https://{{s}}.basemaps.cartocdn.com/dark_only_labels/{{z}}/{{x}}/{{y}}{{r}}.png',{{maxZoom:19,pane:'shadowPane'}});
+map.on('baselayerchange',e=>{{ if(e.name==='Satellite') labels.addTo(map); else map.removeLayer(labels); }});
 const evac=[[33.4645,-117.667],[33.4675,-117.670],[33.472,-117.669],[33.478,-117.666],[33.483,-117.662],[33.489,-117.650],[33.492,-117.632],[33.489,-117.621],[33.482,-117.620],[33.476,-117.628],[33.470,-117.640],[33.4655,-117.650],[33.462,-117.660]];
-L.polygon(evac,{{color:'#ff3b30',weight:2,dashArray:'6 6',fillColor:'#ff3b30',fillOpacity:.12}}).addTo(map).bindTooltip('Approximate requested evacuation area (unofficial sketch)',{{sticky:true}});
-const groups={{}};
-L.geoJSON(GJ,{{style:f=>({{color:f.properties.color,weight:f.geometry.type==='Polygon'?2:6,opacity:.95,fillOpacity:.25}}),
- onEachFeature:(f,l)=>{{l.bindTooltip(f.properties.name,{{className:'lbl',sticky:true}});(groups[f.properties.name]=groups[f.properties.name]||[]).push(l);}}}}).addTo(map);
+const evacL=L.polygon(evac,{{color:'#e5484d',weight:2,dashArray:'6 6',fillColor:'#e5484d',fillOpacity:.10}}).bindTooltip('Requested evacuation area, approximate sketch',{{sticky:true,className:'lbl'}}).addTo(map);
+const groups={{}},byGroup={{}};
+const gl=L.geoJSON(GJ,{{style:f=>({{color:f.properties.color,weight:f.geometry.type==='Polygon'?2:5,opacity:.95,fillOpacity:.2,lineCap:'round'}}),
+ onEachFeature:(f,l)=>{{l.bindTooltip(f.properties.name,{{className:'lbl',sticky:true}});(groups[f.properties.name]=groups[f.properties.name]||[]).push(l);(byGroup[f.properties.group]=byGroup[f.properties.group]||new Set()).add(f.properties.name);}}}}).addTo(map);
+L.control.layers({{'Dark map':street,'Satellite':sat}},{{'Streets':gl,'Evacuation sketch':evacL}},{{collapsed:false,position:'topright'}}).addTo(map);
+L.control.scale({{imperial:true,metric:false}}).addTo(map);
+const ORDER={json.dumps([G_ORIGIN,G_IMPACT,G_THREAT,G_ORDER,G_REF])},COL={json.dumps(COLORS)},MISS={json.dumps([STREETS[m][0] for m in missing])};
 const leg=document.getElementById('legend');
-Object.entries(groups).forEach(([name,ls])=>{{const p=ls[0].feature.properties;const d=document.createElement('div');
- d.innerHTML=`<span class="sw ${{ls[0].feature.geometry.type==='Polygon'?'p':''}}" style="background:${{p.color}}"></span>${{name}}<span class="k">${{p.kind}}</span>`;
- d.onclick=()=>{{map.fitBounds(L.featureGroup(ls).getBounds().pad(.4));ls.forEach(l=>l.openTooltip());}};leg.appendChild(d);}});
-// label impacted streets permanently
-['Avenida Calita','Via La Mirada','Via De Agua','Calle Esperanza','Avenida California','Camino Las Ramblas'].forEach(n=>{{const ls=groups[n];if(!ls)return;const c=L.featureGroup(ls).getBounds().getCenter();L.marker(c,{{opacity:0}}).addTo(map).bindTooltip(n,{{permanent:true,className:'lbl',direction:'top'}});}});
-L.control.scale({{imperial:true}}).addTo(map);
+ORDER.forEach(g=>{{const names=[...(byGroup[g]||[])].sort();if(!names.length)return;const h=document.createElement('h3');h.innerHTML=`<i style="background:${{COL[g]}}"></i>${{g}}`;leg.appendChild(h);const ul=document.createElement('ul');
+ names.forEach(n=>{{const li=document.createElement('li');li.textContent=n;li.onclick=()=>{{document.body.className='tab-map';tabs('map');map.invalidateSize();map.fitBounds(L.featureGroup(groups[n]).getBounds().pad(.5));groups[n].forEach(l=>l.openTooltip());}};ul.appendChild(li);}});leg.appendChild(ul);}});
+if(MISS.length){{const ul=document.createElement('ul');MISS.forEach(n=>{{const li=document.createElement('li');li.className='miss';li.innerHTML=`${{n}}<small>not in map data yet</small>`;ul.appendChild(li);}});leg.appendChild(ul);}}
+// permanent labels on the named streets
+['Avenida Calita','Via La Mirada','Via De Agua','Calle Esperanza','Avenida California','Camino Las Ramblas','Portico Del Norte','Avenida Placida'].forEach(n=>{{const ls=groups[n];if(!ls)return;const c=L.featureGroup(ls).getBounds().getCenter();L.marker(c,{{opacity:0,interactive:false}}).addTo(map).bindTooltip(n,{{permanent:true,className:'lbl',direction:'top',offset:[0,-4]}});}});
+function tabs(t){{document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));}}
+document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>{{document.body.className='tab-'+b.dataset.t;tabs(b.dataset.t);if(b.dataset.t==='map')setTimeout(()=>map.invalidateSize(),50);if(window.twttr&&twttr.widgets)twttr.widgets.load();}});
 </script>
 <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 </body></html>'''
 open('index.html','w').write(page)
-print('features', len(feats), 'found', found, 'MISSING', missing, 'cards', len(cards))
+open('robots.txt','w').write(f'User-agent: *\nAllow: /\nSitemap: {SITE}sitemap.xml\n')
+open('sitemap.xml','w').write(f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>{SITE}</loc><lastmod>{now.date()}</lastmod><changefreq>hourly</changefreq></url></urlset>')
+print('features', len(feats), 'missing', missing, 'posts', n_posts)
+
+# ---- og.png: dark basemap tiles + street lines + title
+try:
+    from PIL import Image, ImageDraw, ImageFont
+    W,H,Z = 1200,630,14
+    lat0,lon0 = 33.474,-117.650
+    def t2p(lat,lon):
+        n=2**Z; x=(lon+180)/360*n; y=(1-math.log(math.tan(math.radians(lat))+1/math.cos(math.radians(lat)))/math.pi)/2*n; return x,y
+    cx,cy=t2p(lat0,lon0); ox,oy=cx*256-W/2, cy*256-H/2
+    img=Image.new('RGB',(W,H),(11,13,16))
+    for tx in range(int(ox//256), int((ox+W)//256)+1):
+        for ty in range(int(oy//256), int((oy+H)//256)+1):
+            try:
+                req=urllib.request.Request(f'https://a.basemaps.cartocdn.com/dark_all/{Z}/{tx}/{ty}.png',headers={'User-Agent':'norte-fire-map og builder'})
+                tile=Image.open(io.BytesIO(urllib.request.urlopen(req,timeout=10).read())).convert('RGB')
+                img.paste(tile,(int(tx*256-ox),int(ty*256-oy)))
+            except Exception as ex: pass
+    img=Image.blend(img, Image.new('RGB',(W,H),(11,13,16)), 0.25)
+    d=ImageDraw.Draw(img,'RGBA')
+    def px(lon,lat): x,y=t2p(lat,lon); return (x*256-ox, y*256-oy)
+    pts=[px(lon,lat) for lat,lon in [[33.4645,-117.667],[33.4675,-117.670],[33.472,-117.669],[33.478,-117.666],[33.483,-117.662],[33.489,-117.650],[33.492,-117.632],[33.489,-117.621],[33.482,-117.620],[33.476,-117.628],[33.470,-117.640],[33.4655,-117.650],[33.462,-117.660]]]
+    d.polygon(pts,fill=(229,72,77,28),outline=(229,72,77,200))
+    def hexrgb(h): return tuple(int(h[i:i+2],16) for i in (1,3,5))
+    for f in sorted(feats,key=lambda f:[G_REF,G_ORDER,G_THREAT,G_IMPACT,G_ORIGIN].index(f['properties']['group'])):
+        c=hexrgb(f['properties']['color']); g=f['geometry']
+        line=[px(*xy) for xy in (g['coordinates'][0] if g['type']=='Polygon' else g['coordinates'])]
+        d.line(line,fill=c+(255,),width=4 if f['properties']['group']!=G_REF else 2,joint='curve')
+    def font(sz,bold=False):
+        for p in (['/System/Library/Fonts/SFCompact.ttf','/System/Library/Fonts/Helvetica.ttc']):
+            try: return ImageFont.truetype(p,sz,index=1 if bold and p.endswith('ttc') else 0)
+            except Exception: pass
+        return ImageFont.load_default()
+    d.rectangle([0,H-150,W,H],fill=(11,13,16,225))
+    d.text((40,H-128),'Norte Fire',font=font(54,True),fill=(229,72,77))
+    d.text((40+d.textlength('Norte Fire',font=font(54,True))+18,H-118),'evacuation street map',font=font(40),fill=(232,235,239))
+    d.text((40,H-56),f"San Juan Capistrano · San Clemente · {facts['acres']} acres · {facts['containment']} contained · updated {now.strftime('%-I:%M %p')} PT",font=font(22),fill=(139,149,163))
+    lx=W-40
+    for g in [G_REF,G_ORDER,G_THREAT,G_IMPACT,G_ORIGIN][::-1]:
+        tw=d.textlength(g,font=font(20)); lx-=tw; d.text((lx,H-126),g,font=font(20),fill=(232,235,239)); lx-=26; d.rectangle([lx,H-118,lx+16,H-106],fill=hexrgb(COLORS[g])); lx-=28
+    img.save('og.png',optimize=True); print('og.png written')
+except Exception as ex: print('og failed', ex)
