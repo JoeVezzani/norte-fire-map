@@ -13,13 +13,17 @@ except Exception: wind = {'obs':[],'hourly':[],'fetched':''}
 # street mentions in the last 90 minutes of posts
 import collections, time as _time
 _cut=_time.time()-5400
-_rx=re.compile(r'\b((?:camino|avenida|via|calle|paseo|rancho|ortega|del)\s+(?:de\s+|la\s+|el\s+|las\s+|los\s+|del\s+)?[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)',re.I)
+_rx=re.compile(r'\b((?:Camino|Avenida|Via|Calle|Paseo|Rancho|Ortega|Portico)\s+(?:de\s+|la\s+|el\s+|las\s+|los\s+|del\s+)?[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)',re.I)
+_stop={'down','in','and','to','is','are','has','have','fire','area','off','near','at','on','the','where','with','from','for','by','as','was','were','this','that','now','today'}
 _cnt=collections.Counter()
 for _p in posts:
     if _p.get('post_created',0)<_cut: continue
     for m in _rx.findall(_p.get('text') or ''):
-        n=' '.join(w.capitalize() if w.lower() not in ('de','la','el','las','los','del') else w.lower() for w in m.split())
-        if len(n)>8 and not re.search(r'(Fire|Norte Fire|Santa Ana|Orange|County|San Juan|San Clemente|Capistrano|Watch|Duty|Zone|Zones)$',n): _cnt[n]+=1
+        w=m.split()
+        while len(w)>2 and w[-1].lower() in _stop: w.pop()
+        if w[-1].lower() in _stop or len(w)<2: continue
+        n=' '.join(x.capitalize() if x.lower() not in ('de','la','el','las','los','del') else x.lower() for x in w)
+        _cnt[n]+=1
 mentions=[(n,c) for n,c in _cnt.most_common(12) if c>=2]
 
 # ---- layers: key -> label, group, color
