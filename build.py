@@ -75,7 +75,9 @@ now = datetime.datetime.now(PT)
 built = now.strftime('%b %-d, %Y, %-I:%M %p PT')
 
 def li(items): return ''.join(f'<li>{i}</li>' for i in items)
-timeline = ''.join(f'<li><time>{t}</time><span>{html.escape(s)}</span></li>' for t,s in facts['timeline'])
+def _k(t):
+    h,m=t.split()[0].split(':'); h=int(h)%12+(12 if 'PM' in t else 0); return h*60+int(m)
+timeline = ''.join(f'<li><time>{t}</time><span>{html.escape(s)}</span></li>' for t,s in sorted(facts['timeline'], key=lambda x:-_k(x[0])))
 zones = facts['zones']
 desc = f"Norte Fire, San Clemente and San Juan Capistrano: where Camino Las Ramblas, Via La Mirada, Avenida Calita and the other streets in the evacuation updates are, with official zone links."
 
@@ -154,7 +156,7 @@ nav.tabs{{display:none}}
 <div class="layout">
 <div id="map" role="img" aria-label="Map of Norte Fire streets in San Juan Capistrano and San Clemente"></div>
 <aside>
-<div class="notice">Informational page, not an official source. Check your address on <a href="https://protect.genasys.com/search" target="_blank" rel="noopener">Genasys Protect</a> and follow <a href="https://x.com/OCFireAuthority" target="_blank" rel="noopener">@OCFireAuthority</a>. If you are told to leave, leave.</div>
+<div class="notice">Informational page, not an official source. Check your address on <a href="https://ocpw.maps.arcgis.com/apps/instant/lookup/index.html?appid=61efa4f48aaf42638d7fe59c395b4865&amp;center=-117.6429%3B33.4887&amp;level=12" target="_blank" rel="noopener">the OC evacuation zone map</a> or <a href="https://protect.genasys.com/search" target="_blank" rel="noopener">Genasys Protect</a> and follow <a href="https://x.com/OCFireAuthority" target="_blank" rel="noopener">@OCFireAuthority</a>. If you are told to leave, leave.</div>
 <section>
 <h2>Status</h2>
 <div class="stats"><div class="stat"><b>{facts['acres']}</b><span>acres (OCFA est.)</span></div><div class="stat"><b>{facts['containment']}</b><span>containment</span></div><div class="stat"><b>{facts['started']}</b><span>started, Oct 16</span></div></div>
@@ -163,13 +165,14 @@ nav.tabs{{display:none}}
 <p class="sub">Per radio traffic at 1:02 PM: all streets off Camino Las Ramblas down to I-5 and around to the San Juan dump. The dashed red outline on the map is a sketch of that description, not an official zone.</p>
 </section>
 <section class="leg"><h2>Streets in the updates</h2><div id="legend"></div><p class="sub">Tap a street to zoom to it.</p></section>
-<section><h2>Timeline (PT)</h2><ul class="tl">{timeline}</ul></section>
+<section><h2>Timeline (PT, newest first)</h2><ul class="tl">{timeline}</ul></section>
 <section><h2>Official sources</h2><div class="links">
 <a href="https://protect.genasys.com/search" target="_blank" rel="noopener">Genasys Protect <small>zones by address</small></a>
 <a href="https://ocpw.maps.arcgis.com/apps/instant/lookup/index.html?appid=61efa4f48aaf42638d7fe59c395b4865&amp;center=-117.6429%3B33.4887&amp;level=12" target="_blank" rel="noopener">OC Public Works zone lookup <small>county evacuation map</small></a>
 <a href="https://app.watchduty.org/i/124958" target="_blank" rel="noopener">Watch Duty <small>incident 124958</small></a>
 <a href="https://www.ocfa.org/" target="_blank" rel="noopener">Orange County Fire Authority <small>ocfa.org</small></a>
 <a href="https://www.alertoc.gov/" target="_blank" rel="noopener">AlertOC <small>emergency alerts</small></a>
+<a href="https://app.nationalwildfiretrackingteam.org/?incident=87ebb8be-5f37-4e03-b01a-7350c6fb597d" target="_blank" rel="noopener">Sentinel fire tracker <small>perimeter and aircraft</small></a>
 <a href="https://quickmap.dot.ca.gov/" target="_blank" rel="noopener">Caltrans QuickMap <small>I-5 closures</small></a>
 <a href="https://www.sanjuancapistrano.org/" target="_blank" rel="noopener">City of San Juan Capistrano</a>
 <a href="https://www.san-clemente.org/" target="_blank" rel="noopener">City of San Clemente</a>
