@@ -65,6 +65,14 @@
   [
    "1:29 PM",
    "Hard road closure requested on I-5 from San Juan Creek Rd to Camino De Los Mares (radio traffic via Watch Duty)."
+  ],
+  [
+   "1:46 PM",
+   "Capistrano Unified: nine San Clemente and San Juan Capistrano schools dismissing early; parents asked to pick up students (OC Register)."
+  ],
+  [
+   "1:52 PM",
+   "Fire continues west; front reported about half a mile from I-5 with heavy smoke over the freeway in San Juan Capistrano. Homes lost on Via La Mirada."
   ]
  ],
  "order_zones": {
@@ -99,6 +107,7 @@
   "label": "CBS LA live coverage"
  },
  "closures": [
+  "Nine Capistrano Unified schools dismissing early (check school messages)",
   "I-5 hard closure requested from San Juan Creek Rd to Camino De Los Mares (radio traffic 1:29 PM)",
   "I-5 closed both directions south of San Clemente (Henderson Fire, Camp Pendleton)",
   "Prima Deshecha Landfill closed"
