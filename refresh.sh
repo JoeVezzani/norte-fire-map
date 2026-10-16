@@ -8,6 +8,8 @@ if [ -d "$LOCK" ]; then
 fi
 mkdir "$LOCK" || exit 0; trap 'rm -rf "$LOCK"' EXIT
 export PATH=/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin
+# Two writers: the MacBook pushes code/facts edits, the Mini is the data bot. Every run starts from origin.
+git fetch -q origin && git reset -q --hard origin/main || { echo "$(date '+%F %T') fetch failed" >> ~/.norte-fire-refresh.log; exit 1; }
 K=$(security find-generic-password -a lunarcrush -s lunarcrush-api-key -w) || exit 1
 for t in "norte%20fire" "nortefire" "san%20juan%20capistrano%20fire" "san%20clemente%20fire" "camino%20las%20ramblas" "ocfa%20evacuation" "orange%20county%20fire%20evacuation" "san%20juan%20capistrano%20evacuation" "san%20clemente%20evacuation"; do
   curl -s -m 30 -A "Mozilla/5.0 curl" "https://lunarcrush.com/api4/public/searches/search?term=$t" -H "Authorization: Bearer $K" -o "lc_raw_$t.json"
@@ -62,4 +64,4 @@ for u in "https://tile.openstreetmap.org/14/2838/6617.png" "https://server.arcgi
 done
 python3 build.py || exit 1
 grep -q "tile.openstreetmap.org" index.html && [ $(stat -f%z og.png) -gt 100000 ] || { echo "$(date '+%F %T') BUILD SANITY FAIL" >> ~/.norte-fire-refresh.log; exit 1; }
-git add -A >/dev/null && git commit -qm "refresh $(date '+%m/%d %H:%M')" 2>/dev/null && git push -q && echo "$(date '+%F %T') pushed" >> ~/.norte-fire-refresh.log
+git add -A >/dev/null && git commit -qm "refresh $(date '+%m/%d %H:%M')" 2>/dev/null && { git push -q && echo "$(date '+%F %T') pushed" || echo "$(date '+%F %T') push rejected (MacBook pushed first), next run rebuilds on top"; } >> ~/.norte-fire-refresh.log
