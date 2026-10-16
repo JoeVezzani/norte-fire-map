@@ -139,6 +139,11 @@ h2{{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em
 .leaflet-control-layers{{background:var(--panel);color:var(--fg);border:1px solid var(--line)!important;border-radius:8px!important;font:13px Inter,sans-serif}}
 .leaflet-bar a{{background:var(--panel);color:var(--fg);border-color:var(--line)}}
 .leaflet-control-attribution{{background:rgba(11,13,16,.7)!important;color:var(--muted)!important;font-size:10px}}.leaflet-control-attribution a{{color:var(--muted)!important}}
+#addr{{display:grid;grid-template-columns:1fr auto auto;gap:6px}}#addr input{{min-width:0;background:var(--card);border:1px solid var(--line);border-radius:8px;color:var(--fg);padding:10px 12px;font:15px Inter,sans-serif}}#addr input:focus{{outline:2px solid #8ec5ff;outline-offset:-1px}}
+#addr button{{background:var(--red);color:#fff;border:0;border-radius:8px;padding:0 14px;font:600 14px Inter,sans-serif;cursor:pointer}}#addr #geo{{background:var(--card);color:var(--fg);border:1px solid var(--line)}}
+.res{{margin-top:10px;padding:12px 14px;border-radius:10px;font-size:14px;border:1px solid var(--line);background:var(--card)}}.res b{{display:block;font-family:"Inter Tight",sans-serif;font-size:18px;margin-bottom:2px}}
+.res.order{{background:#3a1215;border-color:#8a2a30}}.res.order b{{color:#ff8a8f}}.res.warn{{background:#3a2d08;border-color:#8a6a12}}.res.warn b{{color:#ffd45c}}.res.ok{{background:#0f2a1a;border-color:#1f6b3a}}.res.ok b{{color:#6fdc8c}}
+.zones span.warn{{background:#2a2208;border-color:#5a4a12;color:#ffd45c}}
 nav.tabs{{display:none}}
 @media (max-width:900px){{
  .layout{{display:block;height:auto}}
@@ -157,12 +162,18 @@ nav.tabs{{display:none}}
 <div id="map" role="img" aria-label="Map of Norte Fire streets in San Juan Capistrano and San Clemente"></div>
 <aside>
 <div class="notice">Informational page, not an official source. Check your address on <a href="https://ocpw.maps.arcgis.com/apps/instant/lookup/index.html?appid=61efa4f48aaf42638d7fe59c395b4865&amp;center=-117.6429%3B33.4887&amp;level=12" target="_blank" rel="noopener">the OC evacuation zone map</a> or <a href="https://protect.genasys.com/search" target="_blank" rel="noopener">Genasys Protect</a> and follow <a href="https://x.com/OCFireAuthority" target="_blank" rel="noopener">@OCFireAuthority</a>. If you are told to leave, leave.</div>
+<section class="check">
+<h2>Am I in an evacuation zone?</h2>
+<form id="addr" autocomplete="off"><input id="q" type="text" inputmode="text" placeholder="Street address, San Juan Capistrano or San Clemente" aria-label="Address"><button type="submit">Check</button><button type="button" id="geo" title="Use my location">Locate me</button></form>
+<div id="res" class="res" hidden></div>
+<p class="sub">Checks the live Orange County evacuation zone layer (OC Public Works). Zones are updated by OCFA and the Sheriff; this page just reads them.</p>
+</section>
 <section>
 <h2>Status</h2>
 <div class="stats"><div class="stat"><b>{facts['acres']}</b><span>acres (OCFA est.)</span></div><div class="stat"><b>{facts['containment']}</b><span>containment</span></div><div class="stat"><b>{facts['started']}</b><span>started, Oct 16</span></div></div>
 <p class="sub">Evacuation <b>orders</b> (leave now):</p>
-<div class="zones">{''.join(f'<span>{html.escape(z)}</span>' for z in zones)}</div>
-<p class="sub">Per radio traffic at 1:02 PM: all streets off Camino Las Ramblas down to I-5 and around to the San Juan dump. The dashed red outline on the map is a sketch of that description, not an official zone.</p>
+<div class="zones" id="zones">{''.join(f'<span>{html.escape(z)}</span>' for z in zones)}</div><p class="sub" id="zonesnote">Loading live zone status from the county layer…</p>
+<p class="sub">Per radio traffic at 1:02 PM: all streets off Camino Las Ramblas down to I-5 and around to the San Juan dump. The red and yellow zones on the map are the live county evacuation areas.</p>
 </section>
 <section class="leg"><h2>Streets in the updates</h2><div id="legend"></div><p class="sub">Tap a street to zoom to it.</p></section>
 <section><h2>Timeline (PT, newest first)</h2><ul class="tl">{timeline}</ul></section>
@@ -193,7 +204,7 @@ const evacL=L.polygon(evac,{{color:'#e5484d',weight:2,dashArray:'6 6',fillColor:
 const groups={{}},byGroup={{}};
 const gl=L.geoJSON(GJ,{{style:f=>({{color:f.properties.color,weight:f.geometry.type==='Polygon'?2:5,opacity:.95,fillOpacity:.2,lineCap:'round'}}),
  onEachFeature:(f,l)=>{{l.bindTooltip(f.properties.name,{{className:'lbl',sticky:true}});(groups[f.properties.name]=groups[f.properties.name]||[]).push(l);(byGroup[f.properties.group]=byGroup[f.properties.group]||new Set()).add(f.properties.name);}}}}).addTo(map);
-L.control.layers({{'Street map':street,'Satellite':sat}},{{'Streets':gl,'Evacuation sketch':evacL}},{{collapsed:false,position:'topright'}}).addTo(map);
+L.control.layers({{'Street map':street,'Satellite':sat}},{{'County evacuation zones (live)':zoneLayer,'Streets':gl,'Radio-traffic sketch':evacL}},{{collapsed:false,position:'topright'}}).addTo(map);
 L.control.scale({{imperial:true,metric:false}}).addTo(map);
 const ORDER={json.dumps([G_ORIGIN,G_IMPACT,G_THREAT,G_ORDER,G_REF])},COL={json.dumps(COLORS)},MISS={json.dumps([STREETS[m][0] for m in missing])};
 const leg=document.getElementById('legend');
@@ -202,6 +213,41 @@ ORDER.forEach(g=>{{const names=[...(byGroup[g]||[])].sort();if(!names.length)ret
 if(MISS.length){{const ul=document.createElement('ul');MISS.forEach(n=>{{const li=document.createElement('li');li.className='miss';li.innerHTML=`${{n}}<small>not in map data yet</small>`;ul.appendChild(li);}});leg.appendChild(ul);}}
 // permanent labels on the named streets
 ['Avenida Calita','Via La Mirada','Via De Agua','Calle Esperanza','Avenida California','Camino Las Ramblas','Portico Del Norte','Avenida Placida'].forEach(n=>{{const ls=groups[n];if(!ls)return;const c=L.featureGroup(ls).getBounds().getCenter();L.marker(c,{{opacity:0,interactive:false}}).addTo(map).bindTooltip(n,{{permanent:true,className:'lbl',direction:'top',offset:[0,-4]}});}});
+
+// ---- live county evacuation zones (OC Public Works feature layer)
+const ZL='https://services.arcgis.com/UXmFoWC7yDHcDN5Q/arcgis/rest/services/Know_Your_Evacuation_Areas_OC_VIew/FeatureServer/0/query';
+const zoneLayer=L.geoJSON(null,{{style:f=>{{const t=(f.properties.Evac_Type||'');const o=/order/i.test(t),w=/warning/i.test(t);return{{color:o?'#e5484d':w?'#f5b400':'#6b7684',weight:o||w?2:1,fillColor:o?'#e5484d':w?'#f5b400':'#000',fillOpacity:o?.22:w?.18:0,dashArray:o||w?null:'3 4'}};}},
+ onEachFeature:(f,l)=>{{const p=f.properties;l.bindTooltip(`<b>${{p.Evac_Area}}</b><br>${{p.Evac_Type||''}}`,{{className:'lbl',sticky:true}});}}}}).addTo(map);
+let zoneStatus={{}};
+async function loadZones(){{try{{
+ const u=ZL+'?where=1%3D1&geometry=-117.75,33.40,-117.55,33.55&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=Evac_Area,Evac_Type,City,Area_Desc&returnGeometry=true&outSR=4326&f=geojson&_='+Date.now();
+ const r=await fetch(u);const g=await r.json();if(!g.features)throw 0;
+ zoneLayer.clearLayers();zoneLayer.addData(g);zoneLayer.bringToBack();evacL.remove();
+ const act=g.features.map(f=>f.properties).filter(p=>!/no evacuation/i.test(p.Evac_Type||''));
+ zoneStatus={{}};act.forEach(p=>zoneStatus[p.Evac_Area]=p.Evac_Type);
+ const z=document.getElementById('zones');if(act.length){{z.innerHTML=act.sort((a,b)=>a.Evac_Area.localeCompare(b.Evac_Area)).map(p=>`<span class="${{/warning/i.test(p.Evac_Type)?'warn':''}}">${{p.Evac_Area}} · ${{/order/i.test(p.Evac_Type)?'ORDER':/warning/i.test(p.Evac_Type)?'WARNING':p.Evac_Type}}</span>`).join('');}}
+ document.getElementById('zonesnote').textContent='Live from the county zone layer, checked '+new Date().toLocaleTimeString([],{{hour:'numeric',minute:'2-digit'}})+'. Red = order (leave now), yellow = warning (be ready).';
+}}catch(e){{document.getElementById('zonesnote').textContent='Could not reach the county zone layer; showing last known zones. Use the OC zone map link below.';}}}}
+loadZones();setInterval(loadZones,120000);
+// ---- address check
+const res=document.getElementById('res');let pin;
+function show(cls,title,body){{res.hidden=false;res.className='res '+cls;res.innerHTML=`<b>${{title}}</b>${{body}}`;}}
+async function checkPoint(lat,lon,label){{
+ show('', 'Checking…', label||'');
+ const u=ZL+`?geometry=${{lon}},${{lat}}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=Evac_Area,Evac_Type,City&returnGeometry=false&f=json&_=${{Date.now()}}`;
+ const r=await fetch(u);const j=await r.json();const f=(j.features||[])[0];
+ if(pin)pin.remove();pin=L.circleMarker([lat,lon],{{radius:8,color:'#fff',weight:2,fillColor:'#8ec5ff',fillOpacity:1}}).addTo(map);map.setView([lat,lon],15);
+ if(!f){{show('ok','Not inside an Orange County evacuation zone','<span>'+(label||'')+'</span><br>This lookup only covers zones in the county layer. Stay alert and check official sources.');return;}}
+ const p=f.attributes,t=p.Evac_Type||'';
+ if(/order/i.test(t))show('order','EVACUATION ORDER: zone '+p.Evac_Area,`<span>${{label||''}}</span><br>Leave now. ${{t}}. Confirm on the <a href="https://ocpw.maps.arcgis.com/apps/instant/lookup/index.html?appid=61efa4f48aaf42638d7fe59c395b4865" target="_blank" rel="noopener">county zone map</a>.`);
+ else if(/warning/i.test(t))show('warn','EVACUATION WARNING: zone '+p.Evac_Area,`<span>${{label||''}}</span><br>Be ready to leave. ${{t}}.`);
+ else show('ok','Zone '+p.Evac_Area+': no evacuation in place',`<span>${{label||''}}</span><br>Status now: ${{t}}. Zones can change fast; recheck.`);
+}}
+document.getElementById('addr').onsubmit=async e=>{{e.preventDefault();const q=document.getElementById('q').value.trim();if(!q)return;show('','Finding address…','');
+ try{{const g=await fetch('https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?f=json&maxLocations=1&outFields=Match_addr&searchExtent=-117.80,33.35,-117.50,33.65&singleLine='+encodeURIComponent(q+(/ca\b|california/i.test(q)?'':', CA')));
+  const c=((await g.json()).candidates||[])[0];if(!c||c.score<70){{show('','Address not found','Try adding the city, e.g. "123 Via De Agua, San Juan Capistrano".');return;}}
+  await checkPoint(c.location.y,c.location.x,c.address);}}catch(err){{show('','Lookup failed','Could not reach the geocoder or county layer. Use the OC zone map link below.');}}}};
+document.getElementById('geo').onclick=()=>{{if(!navigator.geolocation)return show('','Location unavailable','');show('','Getting your location…','');navigator.geolocation.getCurrentPosition(p=>checkPoint(p.coords.latitude,p.coords.longitude,'Your current location'),()=>show('','Location permission denied','Type your address instead.'),{{enableHighAccuracy:true,timeout:10000}});}};
 function tabs(t){{document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));}}
 document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>{{document.body.className='tab-'+b.dataset.t;tabs(b.dataset.t);if(b.dataset.t==='map')setTimeout(()=>map.invalidateSize(),50);if(window.twttr&&twttr.widgets)twttr.widgets.load();}});
 </script>
