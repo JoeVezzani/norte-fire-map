@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 """Build index.html for the Norte Fire street map. Run: python3 build.py"""
 import json, html, datetime, os, re
+from urllib.parse import urlparse
+OK_HOSTS={'x.com','twitter.com','youtube.com','www.youtube.com'}
+def safe_link(u):
+    try: pu=urlparse(u)
+    except Exception: return None
+    if pu.scheme!='https' or pu.netloc.lower() not in OK_HOSTS: return None
+    return html.escape(u, quote=True)
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 osm = json.load(open('osm.json'))['elements']
 posts = json.load(open('posts_keep.json'))
@@ -35,15 +42,17 @@ missing = [k for k in STREETS if k not in found]
 posts.sort(key=lambda p: -p.get('post_created',0))
 cards = []
 for p in posts:
-    link = p.get('post_link',''); ts = datetime.datetime.fromtimestamp(p.get('post_created',0), datetime.timezone(datetime.timedelta(hours=-7))).strftime('%-I:%M %p')
+    link = safe_link(p.get('post_link',''))
+    if not link: continue
+    ts = datetime.datetime.fromtimestamp(p.get('post_created',0), datetime.timezone(datetime.timedelta(hours=-7))).strftime('%-I:%M %p')
     who = p.get('influencer_name') or re.sub(r'https?://(www\.)?(x|twitter)\.com/([^/]+)/.*', r'@\3', link)
     txt = html.escape((p.get('text') or '')[:400])
     if p.get('post_type') == 'youtube-video':
-        vid = re.search(r'v=([\w-]+)', link); 
-        body = f'<iframe loading="lazy" src="https://www.youtube.com/embed/{vid.group(1)}" allowfullscreen></iframe>' if vid else ''
+        vid = re.fullmatch(r'https://(www\.)?youtube\.com/watch\?v=([\w-]{6,20})', link); 
+        body = f'<iframe loading="lazy" src="https://www.youtube.com/embed/{vid.group(2)}" allowfullscreen></iframe>' if vid else ''
         cards.append(f'<article class="card yt"><div class="meta">YouTube · {html.escape(who)} · {ts} PT</div>{body}<p>{txt}</p><a href="{link}" target="_blank" rel="noopener">Open on YouTube ↗</a></article>')
     else:
-        if '/anyuser/' in link: continue
+        if '/anyuser/' in link or not re.fullmatch(r'https://(x|twitter)\.com/\w{1,15}/status/\d+', link): continue
         cards.append(f'<article class="card"><blockquote class="twitter-tweet" data-theme="dark" data-dnt="true"><p>{txt}</p>&mdash; {html.escape(who)} <a href="{link}">{ts} PT</a></blockquote></article>')
 built = datetime.datetime.now().strftime('%b %-d, %Y %-I:%M %p PT')
 
