@@ -2,6 +2,9 @@
 """Build index.html + og.png for the Norte Fire street map. Run: python3 build.py"""
 import json, html, datetime, os, re, math, io, urllib.request
 from urllib.parse import urlparse
+def jss(o):
+    """JSON safe for inline <script>: escape <, >, & and U+2028/2029."""
+    return json.dumps(o).replace('<','\\u003c').replace('>','\\u003e').replace('&','\\u0026').replace('\u2028','\\u2028').replace('\u2029','\\u2029')
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 SITE = 'https://joevezzani.github.io/norte-fire-map/'
 PT = datetime.timezone(datetime.timedelta(hours=-7))
@@ -14,15 +17,19 @@ def _strip(h): return re.sub(r'<[^>]+>','',html.unescape(h or '')).strip()
 def _pt(iso):
     try: return datetime.datetime.fromisoformat(iso.replace('Z','+00:00')).astimezone(PT).strftime('%-I:%M %p')
     except Exception: return ''
-if wd.get('data',{}).get('acreage'): facts['acres']=str(wd['data']['acreage'])
-if wd.get('data',{}).get('containment') is not None: facts['containment']=f"{wd['data']['containment']}%"
+_a=wd.get('data',{}).get('acreage')
+if isinstance(_a,(int,float)) and _a>0: facts['acres']=f'{float(_a):g}'
+_c=wd.get('data',{}).get('containment')
+if isinstance(_c,(int,float)) and 0<=_c<=100: facts['containment']=f'{float(_c):g}%'
 elif not facts.get('containment'): facts['containment']='0%'
-_wd_orders=[z.strip() for z in (wd.get('data',{}).get('evacuation_orders') or '').split(',') if z.strip()]
+_zrx=re.compile(r'^[A-Z]{2,4} ?\d{1,3}$')
+_wd_orders=[z.strip() for z in str(wd.get('data',{}).get('evacuation_orders') or '').split(',') if _zrx.match(z.strip())]
 for z in _wd_orders: facts.setdefault('order_zones',{}).setdefault(z,'Watch Duty / OCFA')
-_wd_warn=[z.strip() for z in (wd.get('data',{}).get('evacuation_warnings') or '').split(',') if z.strip()]
+_wd_warn=[z.strip() for z in str(wd.get('data',{}).get('evacuation_warnings') or '').split(',') if _zrx.match(z.strip())]
 for z in _wd_warn: facts.setdefault('warning_zones',{}).setdefault(z,'Watch Duty / OCFA')
 wd_reports=[(_pt(r['t']),_strip(r['msg'])) for r in wd.get('reports',[]) if r.get('msg')]
-wd_photos=[p for p in wd.get('photos',[]) if p.get('media')]
+_prx=re.compile(r'^https://images\.watchduty\.org/uploads/[\w/.-]+\.(jpe?g|png|webp)$',re.I)
+wd_photos=[p for p in wd.get('photos',[]) if p.get('media') and isinstance(p.get('lat'),(int,float)) and isinstance(p.get('lng'),(int,float)) and _prx.match(str(p['media'][0]))]
 try: wind = json.load(open('wind.json'))
 except Exception: wind = {'obs':[],'hourly':[],'fetched':''}
 # street mentions in the last 90 minutes of posts
@@ -130,7 +137,7 @@ page = f'''<!doctype html>
 <meta name="theme-color" content="#0b0d10">
 <link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="manifest" href="site.webmanifest">
 <meta name="apple-mobile-web-app-title" content="Norte Fire"><meta name="geo.region" content="US-CA"><meta name="geo.placename" content="San Juan Capistrano, California">
-<script type="application/ld+json">{json.dumps({"@context":"https://schema.org","@type":"WebPage","name":"Norte Fire Map","url":SITE,"description":desc,"dateModified":now.isoformat(),"about":{"@type":"Event","name":"Norte Fire","startDate":"2026-10-16T11:30:00-07:00","location":{"@type":"Place","name":"San Clemente / San Juan Capistrano, Orange County, CA"}}})}</script>
+<script type="application/ld+json">{jss({"@context":"https://schema.org","@type":"WebPage","name":"Norte Fire Map","url":SITE,"description":desc,"dateModified":now.isoformat(),"about":{"@type":"Event","name":"Norte Fire","startDate":"2026-10-16T11:30:00-07:00","location":{"@type":"Place","name":"San Clemente / San Juan Capistrano, Orange County, CA"}}})}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -209,7 +216,7 @@ nav.tabs{{display:none}}
 </section>
 <section>
 <h2>Status</h2>
-<div class="stats"><div class="stat"><b>{facts['acres']}</b><span>acres (OCFA est.)</span></div><div class="stat"><b>{facts['containment']}</b><span>containment</span></div><div class="stat"><b>{facts['started']}</b><span>started, Oct 16</span></div></div>
+<div class="stats"><div class="stat"><b>{html.escape(str(facts['acres']))}</b><span>acres (OCFA est.)</span></div><div class="stat"><b>{html.escape(str(facts['containment']))}</b><span>containment</span></div><div class="stat"><b>{html.escape(str(facts['started']))}</b><span>started, Oct 16</span></div></div>
 <p class="sub">Evacuation <b>orders</b> (leave now):</p>
 <div class="zones" id="zones">{''.join(f'<span>{html.escape(z)}</span>' for z in zones)}</div><p class="sub" id="zonesnote">Loading live zone status from the county layer…</p>
 {('<p class="sub"><b>Road and facility closures:</b> '+' · '.join(html.escape(c) for c in facts.get('closures',[]))+'</p>') if facts.get('closures') else ''}
@@ -253,7 +260,7 @@ nav.tabs{{display:none}}
 </aside></div>
 <nav class="tabs"><button class="on" data-t="map">Map</button><button data-t="info">Streets &amp; status</button><button data-t="posts">Posts</button></nav>
 <script>
-const GJ={json.dumps(gj)};
+const GJ={jss(gj)};
 const map=L.map('map',{{zoomControl:true}}).setView([33.474,-117.650],13);
 const street=L.tileLayer('https://tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png',{{maxZoom:19,attribution:'© OpenStreetMap contributors'}}).addTo(map);
 const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{{z}}/{{y}}/{{x}}',{{maxZoom:19,attribution:'© Esri'}});
@@ -265,7 +272,7 @@ const groups={{}},byGroup={{}};
 const gl=L.geoJSON(GJ,{{style:f=>({{color:f.properties.color,weight:f.geometry.type==='Polygon'?2:5,opacity:.95,fillOpacity:.2,lineCap:'round'}}),
  onEachFeature:(f,l)=>{{l.bindTooltip(f.properties.name,{{className:'lbl',sticky:true}});(groups[f.properties.name]=groups[f.properties.name]||[]).push(l);(byGroup[f.properties.group]=byGroup[f.properties.group]||new Set()).add(f.properties.name);}}}}).addTo(map);
 L.control.scale({{imperial:true,metric:false}}).addTo(map);
-const ORDER={json.dumps([G_ORIGIN,G_IMPACT,G_THREAT,G_ORDER,G_REF])},COL={json.dumps(COLORS)},MISS={json.dumps([STREETS[m][0] for m in missing])};
+const ORDER={jss([G_ORIGIN,G_IMPACT,G_THREAT,G_ORDER,G_REF])},COL={jss(COLORS)},MISS={jss([STREETS[m][0] for m in missing])};
 const leg=document.getElementById('legend');
 ORDER.forEach(g=>{{const names=[...(byGroup[g]||[])].sort();if(!names.length)return;const h=document.createElement('h3');h.innerHTML=`<i style="background:${{COL[g]}}"></i>${{g}}`;leg.appendChild(h);const ul=document.createElement('ul');
  names.forEach(n=>{{const li=document.createElement('li');li.textContent=n;li.onclick=()=>{{document.body.className='tab-map';tabs('map');map.invalidateSize();map.fitBounds(L.featureGroup(groups[n]).getBounds().pad(.5));groups[n].forEach(l=>l.openTooltip());}};ul.appendChild(li);}});leg.appendChild(ul);}});
@@ -279,7 +286,7 @@ const ZL='https://services.arcgis.com/UXmFoWC7yDHcDN5Q/arcgis/rest/services/Know
 const zoneLayer=L.geoJSON(null,{{style:f=>{{const t=effType(f.properties);const o=/order/i.test(t),w=/warning/i.test(t);return{{color:o?'#e5484d':w?'#f5b400':'#6b7684',weight:o||w?2:1,fillColor:o?'#e5484d':w?'#f5b400':'#000',fillOpacity:o?.22:w?.18:0,dashArray:o||w?null:'3 4'}};}},
  onEachFeature:(f,l)=>{{const p=f.properties;l.bindTooltip(`<b>${{esc(p.Evac_Area)}}</b><br>${{esc(effType(p))}}`,{{className:'lbl',sticky:true}});}}}}).addTo(map);
 let zoneStatus={{}};const spreadLayer=L.layerGroup().addTo(map);const photoLayer=L.layerGroup().addTo(map);
-const OVR_ORDER={json.dumps(facts.get('order_zones',{}))},OVR_WARN={json.dumps(facts.get('warning_zones',{}))};
+const OVR_ORDER={jss(facts.get('order_zones',{}))},OVR_WARN={jss(facts.get('warning_zones',{}))};
 const norm=z=>String(z||'').replace(/\\s+/g,'').toUpperCase();
 function effType(p){{const z=norm(p.Evac_Area),t=p.Evac_Type||'';if(/order/i.test(t))return t;const o=Object.keys(OVR_ORDER).find(k=>norm(k)===z);if(o)return 'Evacuation Order (per '+OVR_ORDER[o]+')';if(/warning/i.test(t))return t;const w=Object.keys(OVR_WARN).find(k=>norm(k)===z);if(w)return 'Evacuation Warning (per '+OVR_WARN[w]+')';return t;}}
 L.control.layers({{'Street map':street,'Satellite':sat}},{{'County evacuation zones (live)':zoneLayer,'Predicted spread (1/2/3 h)':spreadLayer,'Photos (Watch Duty users)':photoLayer,'Streets':gl,'Radio-traffic sketch':evacL}},{{collapsed:true,position:'topright'}}).addTo(map);
@@ -295,7 +302,7 @@ async function loadZones(){{try{{
 }}catch(e){{document.getElementById('zonesnote').textContent='Could not reach the county zone layer; showing last known zones. Use the OC zone map link below.';}}}}
 loadZones();setInterval(loadZones,120000);
 // ---- wind arrow (direction the wind is blowing TOWARD) + live NWS refresh
-const WIND={json.dumps(wind['obs'][:1])};
+const WIND={jss(wind['obs'][:1])};
 const WindCtl=L.Control.extend({{onAdd(){{const d=L.DomUtil.create('div','windarrow');d.id='windarrow';return d;}}}});new WindCtl({{position:'bottomleft'}}).addTo(map);
 function drawWind(o){{if(!o)return;const to=((o.dir||0)+180)%360;document.getElementById('windarrow').innerHTML=`<svg viewBox="0 0 24 24" style="transform:rotate(${{to}}deg)"><path d="M12 2l5 9h-3.5v11h-3V11H7z" fill="#8ec5ff"/></svg><span>Wind ${{Math.round(o.mph)}} mph${{o.gust?', gusts '+Math.round(o.gust):''}}<br><small style="color:#9aa4b2;font-weight:500">from ${{Math.round(o.dir)}}° · ${{esc(o.name)}}</small></span>`;}}
 drawWind(WIND[0]);
@@ -304,11 +311,11 @@ async function liveWind(){{try{{const r=await fetch('https://api.weather.gov/sta
  document.getElementById('windnote').textContent='Observed '+new Date(o.time).toLocaleTimeString([],{{hour:'numeric',minute:'2-digit'}})+' at San Clemente Pier. Wind is pushing the fire '+(o.dir>=45&&o.dir<=135?'west/southwest toward I-5 and the coast':'downwind')+'.';}}catch(e){{}}}}
 liveWind();setInterval(liveWind,300000);
 // ---- Watch Duty origin + user photos
-const WDE={json.dumps({k:wd.get('event',{}).get(k) for k in ('lat','lng','address')})},WDP={json.dumps([{'lat':p['lat'],'lng':p['lng'],'t':_pt(p['t']),'u':p['media'][0]} for p in wd_photos if p['media'][0].startswith('https://images.watchduty.org/')][:30])};
+const WDE={jss({'lat':float(wd['event']['lat']) if isinstance(wd.get('event',{}).get('lat'),(int,float)) else None,'lng':float(wd['event']['lng']) if isinstance(wd.get('event',{}).get('lng'),(int,float)) else None,'address':str(wd.get('event',{}).get('address') or '')[:120]})},WDP={jss([{'lat':float(p['lat']),'lng':float(p['lng']),'t':_pt(p['t']),'u':p['media'][0]} for p in wd_photos][:30])};
 if(WDE.lat){{L.marker([WDE.lat,WDE.lng],{{icon:L.divIcon({{className:'',html:'<div style="width:18px;height:18px;border-radius:50%;background:#b91c1c;border:3px solid #fff;box-shadow:0 0 0 4px rgba(185,28,28,.35)"></div>',iconSize:[18,18],iconAnchor:[9,9]}})}}).addTo(map).bindTooltip('Reported origin: '+esc(WDE.address||''),{{className:'lbl'}});}}
 WDP.forEach(p=>photoLayer.addLayer(p=>L.circleMarker([p.lat,p.lng],{{radius:6,color:'#fff',weight:1.5,fillColor:'#8ec5ff',fillOpacity:.95}}).bindPopup(`<a href="${{esc(p.u)}}" target="_blank" rel="noopener"><img src="${{esc(p.u)}}" alt="User photo" style="width:240px;max-width:70vw;border-radius:6px;display:block"></a><div style="font:12px Inter,sans-serif;margin-top:4px;color:#333">User photo via Watch Duty · ${{esc(p.t)}}</div>`)));
 // ---- predicted spread isochrones
-const FRONT={json.dumps(facts.get('front',[]))};
+const FRONT={jss(facts.get('front',[]))};
 function drawSpread(o){{try{{if(!window.spreadModel||!FRONT.length||!o)return;const base={{windFromDeg:o.dir??95,rhPct:o.rh??20,tempF:o.tempF??92}};
  const m=spreadModel({{...base,windMph:Math.max(5,o.mph||15)}}),g=spreadModel({{...base,windMph:Math.max(o.gust||0,o.mph||15)}});
  spreadLayer.clearLayers();
