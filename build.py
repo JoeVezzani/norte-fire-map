@@ -314,6 +314,7 @@ nav.tabs{{display:none}}
 </aside></div>
 <nav class="tabs" role="tablist"><button class="on" data-t="map"><span class="hi" data-ic="locate" data-col="currentColor"></span>Map</button><button data-t="info"><span class="hi" data-ic="danger" data-col="currentColor"></span>Streets &amp; status</button><button data-t="posts"><span class="hi" data-ic="post" data-col="currentColor"></span>Posts</button></nav>
 <script>
+if(window.ICONS_CSS)document.head.insertAdjacentHTML('beforeend','<style>'+ICONS_CSS+'</style>');const PAL=(window.ICONS&&ICONS.palette)||{{}};const mk=(k,c,sz)=>window.iconMarkerHTML?iconMarkerHTML(k,c,sz):'';const ic=(k,c)=>window.iconSVG?iconSVG(k,c):'';
 const GJ={jss(gj)};
 const map=L.map('map',{{zoomControl:true}}).setView([33.474,-117.650],13);
 const street=L.tileLayer('https://tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png',{{maxZoom:19,attribution:'© OpenStreetMap contributors'}}).addTo(map);
