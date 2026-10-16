@@ -34,6 +34,16 @@ for x in range(min(x0,x1),max(x0,x1)+1):
             else: rings=g['coordinates']
             for poly in rings:
                 polys.append([[px2ll(*pt) for pt in ring] for ring in poly])
+# dissolve tile seams into one clean perimeter
+try:
+    from shapely.geometry import Polygon, MultiPolygon, mapping
+    from shapely.ops import unary_union
+    shp=[Polygon(r[0],r[1:]) for r in polys if len(r[0])>=4]
+    u=unary_union([g.buffer(0) for g in shp]).buffer(0.00002).buffer(-0.00002).simplify(0.00003,preserve_topology=True)
+    geoms=list(u.geoms) if hasattr(u,'geoms') else [u]
+    polys=[[[list(c) for c in g.exterior.coords]]+[[list(c) for c in i.coords] for i in g.interiors] for g in geoms if g.area>1e-9]
+    print('dissolved to',len(polys),'polygon(s)')
+except Exception as e: print('dissolve skipped',e)
 gj={'type':'FeatureCollection','features':[{'type':'Feature','properties':{'source':meta.get('source_display_string','FIRIS'),'date':meta.get('source_date_current',''),'fetched':datetime.datetime.now().isoformat(timespec='minutes')},'geometry':{'type':'MultiPolygon','coordinates':polys}}] if polys else []}
 json.dump(gj,open('perimeter.geojson','w'))
 print('perimeter polys',len(polys),'source',meta.get('source_display_string'),meta.get('source_date_current'))
