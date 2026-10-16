@@ -85,6 +85,10 @@
   [
    "2:06 PM",
    "Evacuation shelters open: San Juan Capistrano Community Center (25925 Camino del Avion) and San Clemente Community Center (100 Calle Seville), per OCFA."
+  ],
+  [
+   "2:12 PM",
+   "Capistrano Unified dismissing nine schools early: Bernice Ayer MS, Clarence Lobo ES, Concordia ES, Harold Ambuehl ES, San Clemente HS, San Juan Hills HS, Shorecliffs MS, Truman Benedict ES, Vista Del Mar. Elementary parents go to the school for pickup (OC Dept of Education)."
   ]
  ],
  "order_zones": {
@@ -142,5 +146,19 @@
    "lat": 33.42408,
    "lng": -117.61793
   }
- ]
+ ],
+ "schools": {
+  "note": "Capistrano Unified: nine schools dismissing early. Elementary: parents report to the school for pickup. Secondary: pick up or authorize release via school messages.",
+  "list": [
+   "Bernice Ayer Middle",
+   "Clarence Lobo Elementary",
+   "Concordia Elementary",
+   "Harold Ambuehl Elementary",
+   "San Clemente High",
+   "San Juan Hills High",
+   "Shorecliffs Middle",
+   "Truman Benedict Elementary",
+   "Vista Del Mar"
+  ]
+ }
 }

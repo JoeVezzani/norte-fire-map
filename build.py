@@ -244,6 +244,7 @@ nav.tabs{{display:none}}
 <p class="sub">Checks the live Orange County evacuation zone layer (OC Public Works). Zones are updated by OCFA and the Sheriff; this page just reads them.</p>
 </section>
 {('<section><h2>Evacuation shelters (OCFA)</h2><div class="links">'+''.join(f'<a href="https://maps.apple.com/?daddr={urllib.parse.quote(sh["addr"])}" target="_blank" rel="noopener">{html.escape(sh["name"])}<small>{html.escape(sh["addr"])} · directions</small></a>' for sh in facts.get('shelters',[]))+'</div></section>') if facts.get('shelters') else ''}
+{('<section><h2>Schools</h2><p class="sub" style="margin:0">'+html.escape(facts['schools']['note'])+'</p><div class="zones" style="margin-top:8px">'+''.join(f'<span style="background:#1a2233;border-color:#2c3e5a;color:#bcd3f5">{html.escape(x)}</span>' for x in facts['schools']['list'])+'</div></section>') if facts.get('schools') else ''}
 <section>
 <h2>Status</h2>
 <div class="stats"><div class="stat"><b>{html.escape(str(facts['acres']))}</b><span>acres (OCFA est.)</span></div><div class="stat"><b>{html.escape(str(facts['containment']))}</b><span>containment</span></div><div class="stat"><b>{html.escape(str(facts['started']))}</b><span>started, Oct 16</span></div></div>
