@@ -20,7 +20,7 @@ def _ok_img(u):
     try: pu=_up(u)
     except Exception: return False
     return pu.scheme=='https' and pu.netloc=='images.watchduty.org' and re.fullmatch(r'/uploads/[\w./-]+\.(jpe?g|png|webp)',pu.path or '') is not None
-_ZONE=re.compile(r'^[A-Z]{2,4}\s?\d{1,3}$')
+_ZONE=re.compile(r'^[A-Z]{2,4}\s?\d{1,3}(\s?[A-Z])?$')
 def _strip(h): return re.sub(r'<[^>]+>','',html.unescape(h or '')).strip()
 def _pt(iso):
     try: return datetime.datetime.fromisoformat(iso.replace('Z','+00:00')).astimezone(PT).strftime('%-I:%M %p')
@@ -30,7 +30,7 @@ if isinstance(_a,(int,float)) and _a>0: facts['acres']=f'{float(_a):g}'
 _c=wd.get('data',{}).get('containment')
 if isinstance(_c,(int,float)) and 0<=_c<=100: facts['containment']=f'{float(_c):g}%'
 elif not facts.get('containment'): facts['containment']='0%'
-_zrx=re.compile(r'^[A-Z]{2,4} ?\d{1,3}$')
+_zrx=re.compile(r'^[A-Z]{2,4} ?\d{1,3}( ?[A-Z])?$')
 _wd_orders=[z.strip() for z in str(wd.get('data',{}).get('evacuation_orders') or '').split(',') if _zrx.match(z.strip())]
 for z in _wd_orders: facts.setdefault('order_zones',{}).setdefault(z,'Watch Duty / OCFA')
 _wd_warn=[z.strip() for z in str(wd.get('data',{}).get('evacuation_warnings') or '').split(',') if _zrx.match(z.strip())]
