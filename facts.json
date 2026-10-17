@@ -121,6 +121,10 @@
   [
    "7:37 PM",
    "FIRIS (OES Intel 24) remapped the fire at 570.3 acres, up from 465.5. Growth is inside the earlier footprint area, not a new run."
+  ],
+  [
+   "8:12 PM",
+   "OC Sheriff: overnight shelter open at the Boys & Girls Club, 1 Via Positiva, San Juan Capistrano, animals allowed. Community centers become 8 AM to 8 PM care and reception. Animal shelters: OC Animal Care, 1630 Victory Rd, Tustin (SJC residents) and CASA, 221 Avenida Fabricante, San Clemente (intake until 7 PM, reopens 7 AM)."
   ]
  ],
  "order_zones": {
@@ -167,16 +171,25 @@
  ],
  "shelters": [
   {
+   "name": "Overnight shelter: Boys & Girls Club",
+   "addr": "1 Via Positiva, San Juan Capistrano",
+   "lat": 33.48942,
+   "lng": -117.67684,
+   "note": "Open overnight. Animals allowed. Bring medications."
+  },
+  {
    "name": "San Juan Capistrano Community Center",
    "addr": "25925 Camino del Avion, San Juan Capistrano",
    "lat": 33.48801,
-   "lng": -117.67782
+   "lng": -117.67782,
+   "note": "Care and reception 8 AM to 8 PM. Small pets accepted."
   },
   {
    "name": "San Clemente Community Center",
    "addr": "100 N. Calle Seville, San Clemente",
    "lat": 33.42408,
-   "lng": -117.61793
+   "lng": -117.61793,
+   "note": "Care and reception 8 AM to 8 PM. Small pets accepted."
   }
  ],
  "schools": {
@@ -197,5 +210,21 @@
  "front_time": "2026-10-16T13:54:00-07:00",
  "injuries": "One firefighter treated for heat exhaustion (OCFA via ABC7). No civilian injuries reported.",
  "hotline": "714-628-7085",
- "shelter_note": "Both shelters remain open and accept small pets (OCFA, 7:02 PM). Bring medicines, ID and chargers. If you need a ride, call 911."
+ "shelter_note": "Per OC Sheriff at 8:12 PM. The Boys & Girls Club is the overnight shelter and allows animals. The two community centers run care and reception 8 AM to 8 PM. Bring medicines, ID and chargers. If you need a ride, call 911.",
+ "animal_shelters": [
+  {
+   "name": "OC Animal Care emergency shelter (dogs, cats, small pets)",
+   "addr": "1630 Victory Road, Tustin",
+   "lat": 33.71178,
+   "lng": -117.83247,
+   "note": "For San Juan Capistrano evacuees. Bring photo ID, vaccination records, special food, medications. Pets or large animals: 714-935-6848 (8 AM to 5 PM) or 714-259-1122 (5 PM to 8 AM)."
+  },
+  {
+   "name": "San Clemente / Dana Point Animal Shelter (CASA)",
+   "addr": "221 Avenida Fabricante, San Clemente",
+   "lat": 33.4418,
+   "lng": -117.58411,
+   "note": "Accepting pets from San Clemente and San Juan Capistrano evacuees. Intake until 7 PM, reopens 7 AM."
+  }
+ ]
 }
