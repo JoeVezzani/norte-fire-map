@@ -109,6 +109,10 @@
   [
    "5:44 PM",
    "OCFA: at least six homes damaged or destroyed (via news reports)."
+  ],
+  [
+   "6:05 PM",
+   "OCFA via ABC7: one firefighter injured from heat exhaustion; six homes damaged or destroyed."
   ]
  ],
  "order_zones": {
@@ -182,5 +186,6 @@
   ]
  },
  "damage": "OCFA: at least six homes damaged or destroyed, on Via La Mirada and nearby (reported 5:44 PM). Broadcast video and photos suggest the count may be higher. Final numbers come after damage inspection.",
- "front_time": "2026-10-16T13:54:00-07:00"
+ "front_time": "2026-10-16T13:54:00-07:00",
+ "injuries": "One firefighter treated for heat exhaustion (OCFA via ABC7). No civilian injuries reported."
 }

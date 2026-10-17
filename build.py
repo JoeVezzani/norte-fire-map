@@ -318,6 +318,7 @@ nav.tabs{{display:none}}
 <h2><span class="hi" data-ic="danger" data-col="#e5484d"></span>Status</h2>
 <div class="stats"><div class="stat"><b>{html.escape(str(facts['acres']))}</b><span>acres (OCFA est.)</span></div><div class="stat"><b>{html.escape(str(facts['containment']))}</b><span>containment</span></div><div class="stat"><b>{html.escape(str(facts['started']))}</b><span>started, Oct 16</span></div></div>
 {('<p class="sub"><b>Damage:</b> '+html.escape(facts['damage'])+'</p>') if facts.get('damage') else ''}
+{('<p class="sub"><b>Injuries:</b> '+html.escape(facts['injuries'])+'</p>') if facts.get('injuries') else ''}
 <p class="sub">Evacuation <b>orders</b> (leave now):</p>
 <div class="zones" id="zones">{''.join(f'<span>{html.escape(z)}</span>' for z in zones)}</div><p class="sub" id="zonesnote">Loading live zone status from the county layer…</p>
 {('<p class="sub"><b>Road and facility closures:</b> '+' · '.join(html.escape(c) for c in facts.get('closures',[]))+'</p>') if facts.get('closures') else ''}
