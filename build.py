@@ -312,13 +312,14 @@ nav.tabs{{display:none}}
 <div id="res" class="res" role="status" aria-live="polite" hidden></div>
 <p class="sub">Checks the live Orange County evacuation zone layer (OC Public Works). Zones are updated by OCFA and the Sheriff; this page just reads them.</p>
 </section>
-{('<section><h2><span class="hi" data-ic="shelter" data-col="#1f8a4c"></span>Evacuation shelters (OCFA)</h2><div class="links">'+''.join(f'<a href="https://maps.apple.com/?daddr={urllib.parse.quote(sh["addr"])}" target="_blank" rel="noopener">{html.escape(sh["name"])}<small>{html.escape(sh["addr"])} · directions</small></a>' for sh in facts.get('shelters',[]))+'</div><p class="sub">Opened by OCFA at 2:06 PM. Bring medicines, ID and chargers. Pets: check with the shelter before you arrive. If you need a ride, call 911.</p></section>') if facts.get('shelters') else ''}
+{('<section><h2><span class="hi" data-ic="shelter" data-col="#1f8a4c"></span>Evacuation shelters (OCFA)</h2><div class="links">'+''.join(f'<a href="https://maps.apple.com/?daddr={urllib.parse.quote(sh["addr"])}" target="_blank" rel="noopener">{html.escape(sh["name"])}<small>{html.escape(sh["addr"])} · directions</small></a>' for sh in facts.get('shelters',[]))+'</div><p class="sub">'+html.escape(facts.get('shelter_note','Opened by OCFA at 2:06 PM. Bring medicines, ID and chargers. Pets: check with the shelter before you arrive. If you need a ride, call 911.'))+'</p></section>') if facts.get('shelters') else ''}
 {('<section><h2><span class="hi" data-ic="school" data-col="#2f6feb"></span>Schools</h2><p class="sub" style="margin:0">'+html.escape(facts['schools']['note'])+'</p><div class="zones" style="margin-top:8px">'+''.join(f'<span style="background:#1a2233;border-color:#2c3e5a;color:#bcd3f5">{html.escape(x)}</span>' for x in facts['schools']['list'])+'</div></section>') if facts.get('schools') else ''}
 <section>
 <h2><span class="hi" data-ic="danger" data-col="#e5484d"></span>Status</h2>
 <div class="stats"><div class="stat"><b>{html.escape(str(facts['acres']))}</b><span>acres (OCFA est.)</span></div><div class="stat"><b>{html.escape(str(facts['containment']))}</b><span>containment</span></div><div class="stat"><b>{html.escape(str(facts['started']))}</b><span>started, Oct 16</span></div></div>
 {('<p class="sub"><b>Damage:</b> '+html.escape(facts['damage'])+'</p>') if facts.get('damage') else ''}
 {('<p class="sub"><b>Injuries:</b> '+html.escape(facts['injuries'])+'</p>') if facts.get('injuries') else ''}
+{('<p class="sub"><b>OCFA public information hotline:</b> <a href="tel:'+html.escape(facts['hotline'].replace('-',''))+'">'+html.escape(facts['hotline'])+'</a></p>') if facts.get('hotline') else ''}
 <p class="sub">Evacuation <b>orders</b> (leave now):</p>
 <div class="zones" id="zones">{''.join(f'<span>{html.escape(z)}</span>' for z in zones)}</div><p class="sub" id="zonesnote">Loading live zone status from the county layer…</p>
 {('<p class="sub"><b>Road and facility closures:</b> '+' · '.join(html.escape(c) for c in facts.get('closures',[]))+'</p>') if facts.get('closures') else ''}

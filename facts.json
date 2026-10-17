@@ -113,6 +113,10 @@
   [
    "6:05 PM",
    "OCFA via ABC7: one firefighter injured from heat exhaustion; six homes damaged or destroyed."
+  ],
+  [
+   "7:02 PM",
+   "OCFA press conference: 0% contained; objective is to hold the fire inside its current perimeter. 400 personnel assigned, 400 more responding, crews out all night and into the weekend. Both shelters remain open and accept small pets. Repopulation not until deemed safe. Public information hotline 714-628-7085."
   ]
  ],
  "order_zones": {
@@ -187,5 +191,7 @@
  },
  "damage": "OCFA: at least six homes damaged or destroyed, on Via La Mirada and nearby (reported 5:44 PM). Broadcast video and photos suggest the count may be higher. Final numbers come after damage inspection.",
  "front_time": "2026-10-16T13:54:00-07:00",
- "injuries": "One firefighter treated for heat exhaustion (OCFA via ABC7). No civilian injuries reported."
+ "injuries": "One firefighter treated for heat exhaustion (OCFA via ABC7). No civilian injuries reported.",
+ "hotline": "714-628-7085",
+ "shelter_note": "Both shelters remain open and accept small pets (OCFA, 7:02 PM). Bring medicines, ID and chargers. If you need a ride, call 911."
 }
