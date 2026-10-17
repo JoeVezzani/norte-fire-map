@@ -101,6 +101,10 @@
   [
    "3:44 PM",
    "Six air tankers released and the no-divert status lifted, per Air Attack (via Watch Duty). A sign the air fight is winding down, not that orders are lifted."
+  ],
+  [
+   "4:57 PM",
+   "KTLA: at least six homes burned in San Juan Capistrano neighborhoods. OCFA's official count still pending inspection."
   ]
  ],
  "order_zones": {
@@ -173,6 +177,6 @@
    "Vista Del Mar"
   ]
  },
- "damage": "Homes destroyed on Via La Mirada and nearby. Broadcast video and photos show at least 8. No official OCFA count yet; OCFA will release numbers after crews inspect.",
+ "damage": "Homes destroyed on Via La Mirada and nearby. OCFA confirms 4 homes impacted; KTLA reports at least 6 burned (4:57 PM); broadcast video and photos suggest at least 8. No official OCFA damage count yet.",
  "front_time": "2026-10-16T13:54:00-07:00"
 }
