@@ -33,5 +33,11 @@ out = {'fetched': time.strftime('%Y-%m-%dT%H:%M'), 'event': {k: ev.get(k) for k 
        'photos': [{'t': r.get('date_created'), 'lat': r.get('lat'), 'lng': r.get('lng'), 'media': [m.get('url') for m in (r.get('media') or []) if isinstance(m, dict) and m.get('url')]} for r in ph if r.get('lat') is not None]}
 perims={k:v for k,v in caught.items() if 'perimeter' in k.lower()}
 if perims: json.dump(perims, open('wd_perim.json','w'))
+# keep previous photos/reports if this capture came back empty (page sometimes skips a request)
+try:
+    prev=json.load(open('wd.json'))
+    if not out['photos'] and prev.get('photos'): out['photos']=prev['photos']
+    if len(out['reports'])<len(prev.get('reports',[])): out['reports']=prev['reports']
+except Exception: pass
 json.dump(out, open('wd.json', 'w'))
 print('wd ok', out['data']['acreage'], out['data']['containment'], len(out['reports']), 'reports', len(out['photos']), 'photos')
