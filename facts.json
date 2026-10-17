@@ -149,15 +149,17 @@
   [
    "Oct 17 11:05 AM",
    "OC Public Works split zone SJC 10 into SJC 10 A and SJC 10 B on the county map. Both halves remain under Evacuation Order. Splits like this usually come before a partial repopulation; watch for one half to be released first."
+  ],
+  [
+   "Oct 17 12:01 PM",
+   "Evacuation orders LIFTED for zones SCL13 (San Clemente) and SJC 10 B (San Juan Capistrano) on the OC Public Works map; Watch Duty's order list now matches. Residents of those zones may return. Expect crews, hoses and smoke; drive slowly. SCL12, SJC04, SJC05 and SJC 10 A remain under Evacuation Order."
   ]
  ],
  "order_zones": {
   "SJC04": "OCFA 1:04 PM",
   "SJC05": "OCFA 1:04 PM",
   "SCL12": "OCFA 1:04 PM",
-  "SCL13": "OCFA 1:04 PM",
-  "SJC 10 A": "OCFA 1:04 PM (split 11:05 AM)",
-  "SJC 10 B": "OCFA 1:04 PM (split 11:05 AM)"
+  "SJC 10 A": "OCFA 1:04 PM (split 11:05 AM)"
  },
  "warning_zones": {},
  "front": [
