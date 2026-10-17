@@ -131,11 +131,15 @@ for p in sorted(posts, key=lambda p: -p.get('post_created',0)):
         cards.append(f'<article class="post video"><div class="meta"><span>YouTube</span><span>{html.escape(who)}</span><time>{ts}</time></div><iframe loading="lazy" src="https://www.youtube.com/embed/{vid.group(2)}" title="Norte Fire video" allowfullscreen></iframe><p>{txt}</p></article>')
     elif pt == 'tweet':
         if '/anyuser/' in link or not re.fullmatch(r'https://(x|twitter)\.com/\w{1,15}/status/\d+', link): continue
-        cards.append(f'<article class="post"><blockquote class="twitter-tweet" data-theme="dark" data-dnt="true" data-conversation="none"><p>{txt}</p>&mdash; {html.escape(who)} <a href="{link}">{ts}</a></blockquote></article>')
+        if n_posts < 12:
+            cards.append(f'<article class="post"><blockquote class="twitter-tweet" data-theme="dark" data-dnt="true" data-conversation="none"><p>{txt}</p>&mdash; {html.escape(who)} <a href="{link}">{ts}</a></blockquote></article>')
+        else:
+            cards.append(f'<article class="post"><div class="meta"><span>X</span><span>{html.escape(who)}</span><time>{ts}</time></div><p>{txt}</p><a class="out" href="{link}" target="_blank" rel="noopener">Open post</a></article>')
     elif pt == 'reddit-post':
         cards.append(f'<article class="post"><div class="meta"><span>Reddit</span><span>{html.escape(who)}</span><time>{ts}</time></div><p>{txt}</p><a class="out" href="{link}" target="_blank" rel="noopener">Open on Reddit</a></article>')
     else: continue
     n_posts += 1
+    if n_posts >= 80: break
 now = datetime.datetime.now(PT)
 live_vid = re.sub(r'[^\w-]','',str(facts.get('live_video',{}).get('id',''))) if facts.get('live_video') else ''
 # posts pinned to the streets they name (last 3 h), keyed by the label used on the map
@@ -267,7 +271,7 @@ h2{{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em
 .tl{{list-style:none;margin:0;padding:0}}.tl li{{display:grid;grid-template-columns:64px 1fr;gap:10px;padding:6px 0;font-size:13.5px;border-bottom:1px dashed var(--line)}}.tl li:last-child{{border:0}}
 .tl time{{color:var(--muted);font-variant-numeric:tabular-nums;font-size:12.5px;padding-top:1px}}
 .links{{display:grid;gap:6px}}.links a{{display:flex;justify-content:space-between;padding:10px 12px;background:var(--card);border:1px solid var(--line);border-radius:8px;color:var(--fg);text-decoration:none;font-size:14px}}.links a:hover{{border-color:#3a434f}}.links a small{{color:var(--muted);text-align:right}}
-.post{{margin:10px 0;padding:10px;background:var(--card);border:1px solid var(--line);border-radius:10px;font-size:13.5px}}
+.post{{content-visibility:auto;contain-intrinsic-size:1px 160px;margin:10px 0;padding:10px;background:var(--card);border:1px solid var(--line);border-radius:10px;font-size:13.5px}}
 .post .meta{{display:flex;gap:10px;color:var(--muted);font-size:12px;margin-bottom:6px}}.post .meta time{{margin-left:auto;font-variant-numeric:tabular-nums}}
 .post iframe{{width:100%;aspect-ratio:16/9;border:0;border-radius:6px}}.post p{{margin:6px 0 0}}.post .out{{font-size:13px}}
 .twitter-tweet{{margin:0!important}}
@@ -372,7 +376,7 @@ nav.tabs{{display:none}}
 <script>
 if(window.ICONS_CSS)document.head.insertAdjacentHTML('beforeend','<style>'+ICONS_CSS+'</style>');const PAL=(window.ICONS&&ICONS.palette)||{{}};const mk=(k,c,sz)=>window.iconMarkerHTML?iconMarkerHTML(k,c,sz):'';const ic=(k,c)=>window.iconSVG?iconSVG(k,c):'';
 const GJ={jss(gj)};
-const map=L.map('map',{{zoomControl:true,tapHold:false,bounceAtZoomLimits:false,touchZoom:true,dragging:true}}).setView([33.474,-117.650],13);
+const map=L.map('map',{{zoomControl:true,preferCanvas:true,bounceAtZoomLimits:false,touchZoom:true,dragging:true}}).setView([33.474,-117.650],13);
 const street=L.tileLayer('https://tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png',{{maxZoom:19,attribution:'© OpenStreetMap contributors'}});
 const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{{z}}/{{y}}/{{x}}',{{maxZoom:19,attribution:'© Esri'}}).addTo(map);
 const labels=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{{z}}/{{y}}/{{x}}',{{maxZoom:19,pane:'shadowPane'}}).addTo(map);
@@ -493,9 +497,13 @@ document.getElementById('geo').onclick=()=>{{if(!navigator.geolocation)return sh
 document.querySelectorAll('h2 .hi, nav.tabs .hi, .notice .hi').forEach(e=>e.innerHTML=ic(e.dataset.ic,e.dataset.col));
 const BUILT_TS={int(now.timestamp())};function staleCheck(){{const m=Math.round((Date.now()/1000-BUILT_TS)/60);const el=document.getElementById('stale');if(m>45){{el.hidden=false;el.innerHTML=`This page has not been updated in over ${{m}} minutes. Check <a style="color:#ffd45c" href="https://www.ocfa.org/" target="_blank" rel="noopener">OCFA</a> and <a style="color:#ffd45c" href="https://protect.genasys.com/search" target="_blank" rel="noopener">Genasys Protect</a> for current orders.`;}}else el.hidden=true;}}staleCheck();setInterval(staleCheck,60000);
 function tabs(t){{document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));}}
-document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>{{document.body.className='tab-'+b.dataset.t;tabs(b.dataset.t);document.getElementById('vp').setAttribute('content',b.dataset.t==='map'?'width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover':'width=device-width,initial-scale=1,viewport-fit=cover');if(b.dataset.t==='map')setTimeout(()=>map.invalidateSize(),50);if(window.twttr&&twttr.widgets)twttr.widgets.load();}});
+document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>{{document.body.className='tab-'+b.dataset.t;tabs(b.dataset.t);document.getElementById('vp').setAttribute('content',b.dataset.t==='map'?'width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover':'width=device-width,initial-scale=1,viewport-fit=cover');if(b.dataset.t==='map')setTimeout(()=>map.invalidateSize(),50);if(window.twttr&&twttr.widgets&&b.dataset.t==='posts')twttr.widgets.load();}});
 </script>
-<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+<script>
+(function(){{let loaded=false;function loadTw(){{if(loaded)return;loaded=true;const s=document.createElement('script');s.async=true;s.src='https://platform.twitter.com/widgets.js';s.charset='utf-8';document.body.appendChild(s);}}
+const sec=document.getElementById('posts');if('IntersectionObserver' in window&&sec){{const io=new IntersectionObserver(es=>{{if(es.some(e=>e.isIntersecting)){{loadTw();io.disconnect();}}}},{{rootMargin:'400px'}});io.observe(sec);}}else setTimeout(loadTw,4000);
+document.querySelectorAll('nav.tabs button').forEach(b=>b.addEventListener('click',()=>{{if(b.dataset.t==='posts')loadTw();}}));}})();
+</script>
 </body></html>'''
 open('index.html','w').write(page)
 open('robots.txt','w').write(f'User-agent: *\nAllow: /\nSitemap: {SITE}sitemap.xml\n')
