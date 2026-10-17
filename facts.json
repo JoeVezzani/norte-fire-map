@@ -105,6 +105,10 @@
   [
    "4:57 PM",
    "KTLA: at least six homes burned in San Juan Capistrano neighborhoods. OCFA's official count still pending inspection."
+  ],
+  [
+   "5:44 PM",
+   "OCFA: at least six homes damaged or destroyed (via news reports)."
   ]
  ],
  "order_zones": {
@@ -177,6 +181,6 @@
    "Vista Del Mar"
   ]
  },
- "damage": "Homes destroyed on Via La Mirada and nearby. OCFA confirms 4 homes impacted; KTLA reports at least 6 burned (4:57 PM); broadcast video and photos suggest at least 8. No official OCFA damage count yet.",
+ "damage": "OCFA: at least six homes damaged or destroyed, on Via La Mirada and nearby (reported 5:44 PM). Broadcast video and photos suggest the count may be higher. Final numbers come after damage inspection.",
  "front_time": "2026-10-16T13:54:00-07:00"
 }
