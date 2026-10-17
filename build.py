@@ -128,7 +128,11 @@ for p in sorted(posts, key=lambda p: -p.get('post_created',0)):
     if pt == 'youtube-video':
         vid = re.fullmatch(r'https://(www\.)?youtube\.com/watch\?v=([\w-]{6,20})', link)
         if not vid: continue
-        cards.append(f'<article class="post video"><div class="meta"><span>YouTube</span><span>{html.escape(who)}</span><time>{ts}</time></div><iframe loading="lazy" src="https://www.youtube.com/embed/{vid.group(2)}" title="Norte Fire video" allowfullscreen></iframe><p>{txt}</p></article>')
+        n_vid = sum(1 for c in cards if 'youtube.com/embed' in c)
+        if n_vid < 6:
+            cards.append(f'<article class="post video"><div class="meta"><span>YouTube</span><span>{html.escape(who)}</span><time>{ts}</time></div><iframe loading="lazy" src="https://www.youtube.com/embed/{vid.group(2)}" title="Norte Fire video" allowfullscreen></iframe><p>{txt}</p></article>')
+        else:
+            cards.append(f'<article class="post"><div class="meta"><span>YouTube video</span><span>{html.escape(who)}</span><time>{ts}</time></div><p>{txt}</p><a class="out" href="{link}" target="_blank" rel="noopener">Watch on YouTube</a></article>')
     elif pt == 'tweet':
         if '/anyuser/' in link or not re.fullmatch(r'https://(x|twitter)\.com/\w{1,15}/status/\d+', link): continue
         if n_posts < 12:
