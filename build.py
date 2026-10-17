@@ -35,6 +35,21 @@ _wd_orders=[z.strip() for z in str(wd.get('data',{}).get('evacuation_orders') or
 for z in _wd_orders: facts.setdefault('order_zones',{}).setdefault(z,'Watch Duty / OCFA')
 _wd_warn=[z.strip() for z in str(wd.get('data',{}).get('evacuation_warnings') or '').split(',') if _zrx.match(z.strip())]
 for z in _wd_warn: facts.setdefault('warning_zones',{}).setdefault(z,'Watch Duty / OCFA')
+# county "Evacuation Lifted" is an affirmative downgrade: it beats the OCFA/Watch Duty order overrides
+lifted_zones={}
+try:
+    _lu='https://services.arcgis.com/UXmFoWC7yDHcDN5Q/arcgis/rest/services/Know_Your_Evacuation_Areas_OC_VIew/FeatureServer/0/query?where=Evac_Type%3D%27Evacuation%20Lifted%27&outFields=Evac_Area,Evac_Type&returnGeometry=false&f=json'
+    _lj=json.load(urllib.request.urlopen(urllib.request.Request(_lu,headers={'User-Agent':'norte-fire-map/1.0'}),timeout=8))
+    for _f in _lj.get('features',[]):
+        _z=str(_f['attributes'].get('Evac_Area','')).strip()
+        if _zrx.match(_z): lifted_zones[_z]='OC Public Works zone map'
+except Exception as _e: print('lifted fetch failed',_e)
+_nz=lambda z:re.sub(r'\s+','',z).upper()
+for _z in list(facts.get('order_zones',{})):
+    if any(_nz(_z)==_nz(l) for l in lifted_zones): facts['order_zones'].pop(_z)
+for _z in list(facts.get('warning_zones',{})):
+    if any(_nz(_z)==_nz(l) for l in lifted_zones): facts['warning_zones'].pop(_z)
+facts['lifted_zones']=lifted_zones
 wd_reports=[(_pt(r['t']),_strip(r['msg'])) for r in wd.get('reports',[]) if r.get('msg')]
 _prx=re.compile(r'^https://images\.watchduty\.org/uploads/[\w/.-]+\.(jpe?g|png|webp)$',re.I)
 wd_photos=[p for p in wd.get('photos',[]) if p.get('media') and isinstance(p.get('lat'),(int,float)) and isinstance(p.get('lng'),(int,float)) and _prx.match(str(p['media'][0]))]
@@ -201,7 +216,7 @@ for _p in posts:
 # auto change log: compare live state to last build
 try: prev=json.load(open('state_prev.json'))
 except Exception: prev={}
-cur={'acres':facts.get('acres'),'containment':facts.get('containment'),'orders':','.join(sorted(facts.get('order_zones',{}).keys())),'perim':(perim['features'][0]['properties'].get('date') if perim else None),'wd_reports':len(wd.get('reports',[]))}
+cur={'acres':facts.get('acres'),'containment':facts.get('containment'),'orders':','.join(sorted(facts.get('order_zones',{}).keys())),'lifted':','.join(sorted(lifted_zones.keys())),'perim':(perim['features'][0]['properties'].get('date') if perim else None),'wd_reports':len(wd.get('reports',[]))}
 try: auto_tl=json.load(open('auto_timeline.json'))
 except Exception: auto_tl=[]
 _nowt=_stamp(now)
@@ -209,6 +224,7 @@ if prev:
     if prev.get('acres')!=cur['acres'] and cur['acres']: auto_tl.append([_nowt,f"Acreage updated to {cur['acres']} (Watch Duty / OCFA)."])
     if prev.get('containment')!=cur['containment'] and cur['containment'] is not None: auto_tl.append([_nowt,f"Containment now {cur['containment']}."])
     if prev.get('orders')!=cur['orders']: auto_tl.append([_nowt,f"Evacuation order zones now: {cur['orders'].replace(',',', ')}."])
+    if prev.get('lifted','')!=cur['lifted'] and cur['lifted']: auto_tl.append([_nowt,f"Evacuation LIFTED for zone(s) {cur['lifted'].replace(',',', ')} on the OC Public Works map. Residents may return; check the map for your address before driving in."])
     if prev.get('perim')!=cur['perim'] and cur['perim']: auto_tl.append([_nowt,"New FIRIS fire perimeter mapped; map updated."])
 json.dump(cur,open('state_prev.json','w')); json.dump(auto_tl[-40:],open('auto_timeline.json','w'))
 def _dedupe(items):
@@ -294,7 +310,7 @@ h2{{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em
 #addr button{{background:#c62a2f;color:#fff;border:0;border-radius:8px;padding:0 14px;font:600 14px Inter,sans-serif;cursor:pointer}}#addr #geo{{background:var(--card);color:var(--fg);border:1px solid var(--line)}}
 .res{{margin-top:10px;padding:12px 14px;border-radius:10px;font-size:14px;border:1px solid var(--line);background:var(--card)}}.res b{{display:block;font-family:"Inter Tight",sans-serif;font-size:18px;margin-bottom:2px}}
 .res.order{{background:#3a1215;border-color:#8a2a30}}.res.order b{{color:#ff8a8f}}.res.warn{{background:#3a2d08;border-color:#8a6a12}}.res.warn b{{color:#ffd45c}}.res.ok{{background:#1a2233;border-color:#2c3e5a}}.res.ok b{{color:#bcd3f5}}
-.zones span.warn{{background:#2a2208;border-color:#5a4a12;color:#ffd45c}}
+.zones span.warn{{background:#2a2208;border-color:#5a4a12;color:#ffd45c}}.zones span.lifted{{background:#0f2a1a;border-color:#1f6b3a;color:#7fe0a3}}
 #windnow{{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}}.w{{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px}}.w b{{display:block;font-family:"Inter Tight",sans-serif;font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}}.w b small{{font-size:12px;color:var(--muted);font-weight:500}}.w span{{font-size:12.5px;color:var(--muted);display:block;line-height:1.35}}
 .hourly{{display:flex;gap:6px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none}}.hourly span{{flex:none;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:12px;white-space:nowrap}}.hourly em{{display:block;font-style:normal;color:var(--muted);font-size:11px}}
 .mention{{list-style:none;margin:0;padding:0}}.mention li{{display:flex;padding:5px 0 5px 20px;font-size:14px;color:#cfd6de}}.mention li small{{margin-left:auto;color:var(--muted);font-size:12px}}
@@ -413,16 +429,16 @@ const zoneLayer=L.geoJSON(null,{{style:f=>{{const t=effType(f.properties);const 
 let zoneStatus={{}};const spreadLayer=L.layerGroup().addTo(map);const photoLayer=L.layerGroup().addTo(map);const stnLayer=L.layerGroup().addTo(map);const shelterLayer=L.layerGroup().addTo(map);const postLayer=L.layerGroup().addTo(map);const closureLayer=L.layerGroup().addTo(map);const perimLayer=L.layerGroup().addTo(map);
 const OVR_ORDER={jss(facts.get('order_zones',{}))},OVR_WARN={jss(facts.get('warning_zones',{}))};
 const norm=z=>String(z||'').replace(/\\s+/g,'').toUpperCase();
-function effType(p){{const z=norm(p.Evac_Area),t=p.Evac_Type||'';if(/order/i.test(t))return t;const o=Object.keys(OVR_ORDER).find(k=>norm(k)===z);if(o)return 'Evacuation Order (per '+OVR_ORDER[o]+')';if(/warning/i.test(t))return t;const w=Object.keys(OVR_WARN).find(k=>norm(k)===z);if(w)return 'Evacuation Warning (per '+OVR_WARN[w]+')';return t;}}
+function effType(p){{const z=norm(p.Evac_Area),t=p.Evac_Type||'';if(/lifted/i.test(t))return t;if(/order/i.test(t))return t;const o=Object.keys(OVR_ORDER).find(k=>norm(k)===z);if(o)return 'Evacuation Order (per '+OVR_ORDER[o]+')';if(/warning/i.test(t))return t;const w=Object.keys(OVR_WARN).find(k=>norm(k)===z);if(w)return 'Evacuation Warning (per '+OVR_WARN[w]+')';return t;}}
 L.control.layers({{'Satellite':sat,'Street map':street}},{{'Fire perimeter (FIRIS)':perimLayer,'County evacuation zones (live)':zoneLayer,'Wind spread guide (not a forecast)':spreadLayer,'Photos (Watch Duty users)':photoLayer,'Wind stations (NWS)':stnLayer,'Shelters and animal shelters':shelterLayer,'Posts by street':postLayer,'Road closures':closureLayer,'Streets':gl,'Radio-traffic sketch':evacL}},{{collapsed:true,position:'topright'}}).addTo(map);
 
 async function loadZones(){{try{{
  const u=ZL+'?where=1%3D1&geometry=-117.75,33.40,-117.55,33.55&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=Evac_Area,Evac_Type,City,Area_Desc&returnGeometry=true&outSR=4326&f=geojson&_='+Date.now();
  const r=await fetch(u);const g=await r.json();if(!g.features)throw 0;
  zoneLayer.clearLayers();zoneLayer.addData(g);zoneLayer.bringToBack();evacL.remove();
- const act=g.features.map(f=>({{...f.properties,Evac_Type:effType(f.properties)}})).filter(p=>/order|warning/i.test(p.Evac_Type));
+ const act=g.features.map(f=>({{...f.properties,Evac_Type:effType(f.properties)}})).filter(p=>/order|warning|lifted/i.test(p.Evac_Type));
  zoneStatus={{}};act.forEach(p=>zoneStatus[p.Evac_Area]=p.Evac_Type);
- const z=document.getElementById('zones');if(act.length){{z.innerHTML=act.sort((a,b)=>a.Evac_Area.localeCompare(b.Evac_Area)).map(p=>`<span class="${{/warning/i.test(p.Evac_Type)?'warn':''}}">${{esc(p.Evac_Area)}} · ${{/order/i.test(p.Evac_Type)?'ORDER':/warning/i.test(p.Evac_Type)?'WARNING':esc(p.Evac_Type)}}</span>`).join('');}}
+ const z=document.getElementById('zones');if(act.length){{z.innerHTML=act.sort((a,b)=>a.Evac_Area.localeCompare(b.Evac_Area)).map(p=>`<span class="${{/warning/i.test(p.Evac_Type)?'warn':/lifted/i.test(p.Evac_Type)?'lifted':''}}">${{esc(p.Evac_Area)}} · ${{/order/i.test(p.Evac_Type)?'ORDER':/warning/i.test(p.Evac_Type)?'WARNING':/lifted/i.test(p.Evac_Type)?'LIFTED':esc(p.Evac_Type)}}</span>`).join('');}}
  document.getElementById('zonesnote').textContent='County zone layer plus OCFA announcements, checked '+new Date().toLocaleTimeString([],{{hour:'numeric',minute:'2-digit'}})+'. Red = order (leave now), yellow = warning (be ready).';
 }}catch(e){{document.getElementById('zonesnote').textContent='Could not reach the county zone layer; showing last known zones. Use the OC zone map link below.';}}}}
 loadZones();setInterval(loadZones,120000);
@@ -497,6 +513,7 @@ async function checkPoint(lat,lon,label){{
  const p=f.attributes,t=esc(effType(p));p.Evac_Area=esc(p.Evac_Area);
  if(/order/i.test(t))show('order','EVACUATION ORDER: zone '+p.Evac_Area,`<span>We matched: <b>${{label||''}}</b></span><br>Leave now. ${{t}}. Confirm on the <a href="https://ocpw.maps.arcgis.com/apps/instant/lookup/index.html?appid=61efa4f48aaf42638d7fe59c395b4865" target="_blank" rel="noopener">county zone map</a>.`);
  else if(/warning/i.test(t))show('warn','EVACUATION WARNING: zone '+p.Evac_Area,`<span>${{label||''}}</span><br>Be ready to leave. ${{t}}.`);
+ else if(/lifted/i.test(t))show('ok','Zone '+p.Evac_Area+': evacuation LIFTED',`<span>We matched: <b>${{label||''}}</b></span><br>The OC Public Works map shows the order for this zone has been lifted and residents may return. Expect fire crews, downed lines and smoke; drive slowly and follow deputies' directions. If OCFA has not yet announced it, wait for their post before heading in.`);
  else show('ok','Zone '+p.Evac_Area+': no order or warning right now',`<span>We matched: <b>${{label||''}}</b></span><br>This fire is moving fast and zones can change within minutes. Get ready to leave anyway, and check again.`);
 }}
 document.getElementById('addr').addEventListener('submit',async e=>{{e.preventDefault();e.stopPropagation();const q=document.getElementById('q').value.trim();if(!q){{show('','Type a street address','Example: 27000 Via De Agua');return;}}document.getElementById('q').blur();show('','Finding address…',esc(q));
