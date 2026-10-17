@@ -195,14 +195,14 @@ for _p in posts:
     if _host in ('x.com','www.x.com','twitter.com','www.twitter.com') and _handle in AGENCY and re.fullmatch(r'/\w{1,15}/status/\d+/?',_u.path or '') and _p.get('text'):
         v=AGENCY[_handle]
         if True:
-            agency_tl.append([datetime.datetime.fromtimestamp(_p['post_created'],PT).strftime('%-I:%M %p'), v+': '+re.sub(r'\s*https?://\S+','',_p['text']).replace('\n',' ').strip()[:300]])
+            agency_tl.append([_stamp(datetime.datetime.fromtimestamp(_p['post_created'],PT)), v+': '+re.sub(r'\s*https?://\S+','',_p['text']).replace('\n',' ').strip()[:300]])
 # auto change log: compare live state to last build
 try: prev=json.load(open('state_prev.json'))
 except Exception: prev={}
 cur={'acres':facts.get('acres'),'containment':facts.get('containment'),'orders':','.join(sorted(facts.get('order_zones',{}).keys())),'perim':(perim['features'][0]['properties'].get('date') if perim else None),'wd_reports':len(wd.get('reports',[]))}
 try: auto_tl=json.load(open('auto_timeline.json'))
 except Exception: auto_tl=[]
-_nowt=now.strftime('%-I:%M %p')
+_nowt=_stamp(now)
 if prev:
     if prev.get('acres')!=cur['acres'] and cur['acres']: auto_tl.append([_nowt,f"Acreage updated to {cur['acres']} (Watch Duty / OCFA)."])
     if prev.get('containment')!=cur['containment'] and cur['containment'] is not None: auto_tl.append([_nowt,f"Containment now {cur['containment']}."])
@@ -218,7 +218,12 @@ def _dedupe(items):
     return out
 tl_all=_dedupe(facts['timeline']+agency_tl+auto_tl)
 def _k(t):
-    h,m=t.split()[0].split(':'); h=int(h)%12+(12 if 'PM' in t else 0); return h*60+int(m)
+    parts=t.split(); day=16
+    if len(parts)>=4 and parts[0].startswith('Oct'):
+        day=int(parts[1]); parts=parts[2:]
+    h,m=parts[0].split(':'); h=int(h)%12+(12 if parts[1].upper()=='PM' else 0); return day*1440+h*60+int(m)
+def _stamp(dt):
+    return dt.strftime('%-I:%M %p') if dt.date()==datetime.date(2026,10,16) else dt.strftime('Oct %-d %-I:%M %p')
 timeline = ''.join(f'<li><time>{t}</time><span>{html.escape(s)}</span></li>' for t,s in sorted(tl_all, key=lambda x:-_k(x[0])))
 zones = facts['zones']
 desc = f"Norte Fire, San Clemente and San Juan Capistrano: where Camino Las Ramblas, Via La Mirada, Avenida Calita and the other streets in the evacuation updates are, with official zone links."
