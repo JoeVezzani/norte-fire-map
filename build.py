@@ -186,6 +186,8 @@ guidance2=open('guidance2.html').read()
 built = now.strftime('%b %-d, %Y, %-I:%M %p PT')
 
 def li(items): return ''.join(f'<li>{i}</li>' for i in items)
+def _stamp(dt):
+    return dt.strftime('%-I:%M %p') if dt.date()==datetime.date(2026,10,16) else dt.strftime('Oct %-d %-I:%M %p')
 # official agency posts -> timeline
 AGENCY={'ocfireauthority':'OCFA','ocsheriff':'OC Sheriff','cityofsjc':'City of SJC','sanclementecity':'City of San Clemente','cal_fire':'CAL FIRE','caltransd12':'Caltrans','ocgov':'OC Gov','capousd':'Capistrano USD'}
 agency_tl=[]
@@ -222,8 +224,7 @@ def _k(t):
     if len(parts)>=4 and parts[0].startswith('Oct'):
         day=int(parts[1]); parts=parts[2:]
     h,m=parts[0].split(':'); h=int(h)%12+(12 if parts[1].upper()=='PM' else 0); return day*1440+h*60+int(m)
-def _stamp(dt):
-    return dt.strftime('%-I:%M %p') if dt.date()==datetime.date(2026,10,16) else dt.strftime('Oct %-d %-I:%M %p')
+
 timeline = ''.join(f'<li><time>{t}</time><span>{html.escape(s)}</span></li>' for t,s in sorted(tl_all, key=lambda x:-_k(x[0])))
 zones = facts['zones']
 desc = f"Norte Fire, San Clemente and San Juan Capistrano: where Camino Las Ramblas, Via La Mirada, Avenida Calita and the other streets in the evacuation updates are, with official zone links."
