@@ -129,6 +129,10 @@
   [
    "10:33 PM",
    "OCFA night update: all evacuation orders remain in effect. Crews working through the night to protect homes."
+  ],
+  [
+   "11:20 PM",
+   "NBC 7: two firefighters injured; at least six homes damaged. OCFA had confirmed one heat-exhaustion injury earlier."
   ]
  ],
  "order_zones": {
@@ -212,7 +216,7 @@
  },
  "damage": "OCFA: at least six homes damaged or destroyed, on Via La Mirada and nearby (reported 5:44 PM). Broadcast video and photos suggest the count may be higher. Final numbers come after damage inspection.",
  "front_time": "2026-10-16T13:54:00-07:00",
- "injuries": "One firefighter treated for heat exhaustion (OCFA via ABC7). No civilian injuries reported.",
+ "injuries": "Two firefighters injured per NBC 7 (11:20 PM); OCFA earlier confirmed one treated for heat exhaustion. No civilian injuries reported.",
  "hotline": "714-628-7085",
  "shelter_note": "Per OC Sheriff at 8:12 PM. The Boys & Girls Club is the overnight shelter and allows animals. The two community centers run care and reception 8 AM to 8 PM. Bring medicines, ID and chargers. If you need a ride, call 911.",
  "animal_shelters": [
