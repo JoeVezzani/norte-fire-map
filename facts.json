@@ -154,9 +154,10 @@
  "order_zones": {
   "SJC04": "OCFA 1:04 PM",
   "SJC05": "OCFA 1:04 PM",
-  "SJC 10": "OCFA 1:04 PM",
   "SCL12": "OCFA 1:04 PM",
-  "SCL13": "OCFA 1:04 PM"
+  "SCL13": "OCFA 1:04 PM",
+  "SJC 10 A": "OCFA 1:04 PM (split 11:05 AM)",
+  "SJC 10 B": "OCFA 1:04 PM (split 11:05 AM)"
  },
  "warning_zones": {},
  "front": [
