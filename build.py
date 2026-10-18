@@ -36,6 +36,8 @@ for z in _wd_orders: facts.setdefault('order_zones',{}).setdefault(z,'Watch Duty
 _wd_warn=[z.strip() for z in str(wd.get('data',{}).get('evacuation_warnings') or '').split(',') if _zrx.match(z.strip())]
 for z in _wd_warn: facts.setdefault('warning_zones',{}).setdefault(z,'Watch Duty / OCFA')
 # county "Evacuation Lifted" is an affirmative downgrade: it beats the OCFA/Watch Duty order overrides
+_psrc=(perim['features'][0]['properties'].get('source') if perim else None) or 'FIRIS'
+_psrc_label={'FIRIS':'FIRIS aircraft-mapped','NIFC':'NIFC (federal incident) mapped'}.get(_psrc,_psrc+' mapped')
 lifted_zones={}
 try:
     _lu='https://services.arcgis.com/UXmFoWC7yDHcDN5Q/arcgis/rest/services/Know_Your_Evacuation_Areas_OC_VIew/FeatureServer/0/query?where=Evac_Type%3D%27Evacuation%20Lifted%27&outFields=Evac_Area,Evac_Type&returnGeometry=false&f=json'
@@ -193,7 +195,7 @@ if perim:
         _pd=perim['features'][0]['properties'].get('date','')
         if _pd:
             facts['front_time']=datetime.datetime.strptime(_pd[:19],'%Y-%m-%d %H:%M:%S').replace(tzinfo=datetime.timezone.utc).astimezone(PT).isoformat()
-        facts['front_note']=f"Downwind edge of the FIRIS perimeter mapped {datetime.datetime.fromisoformat(facts['front_time']).strftime('%-I:%M %p')} PT, taken automatically from the perimeter"
+        facts['front_note']=f"Downwind edge of the {_psrc} perimeter mapped {datetime.datetime.fromisoformat(facts['front_time']).strftime('%-I:%M %p')} PT, taken automatically from the perimeter"
     except Exception as _e: print('front auto failed',_e)
 zones_txt=', '.join(sorted(facts.get('order_zones',{}).keys()))
 guidance=open('guidance.html').read().replace('{ZONES}',html.escape(zones_txt))
@@ -225,7 +227,7 @@ if prev:
     if prev.get('containment')!=cur['containment'] and cur['containment'] is not None: auto_tl.append([_nowt,f"Containment now {cur['containment']}."])
     if prev.get('orders')!=cur['orders']: auto_tl.append([_nowt,f"Evacuation order zones now: {cur['orders'].replace(',',', ')}."])
     if prev.get('lifted','')!=cur['lifted'] and cur['lifted']: auto_tl.append([_nowt,f"Evacuation LIFTED for zone(s) {cur['lifted'].replace(',',', ')} on the OC Public Works map. Residents may return; check the map for your address before driving in."])
-    if prev.get('perim')!=cur['perim'] and cur['perim']: auto_tl.append([_nowt,"New FIRIS fire perimeter mapped; map updated."])
+    if prev.get('perim')!=cur['perim'] and cur['perim']: auto_tl.append([_nowt,f"New {_psrc} fire perimeter mapped; map updated."])
 json.dump(cur,open('state_prev.json','w')); json.dump(auto_tl[-40:],open('auto_timeline.json','w'))
 def _dedupe(items):
     seen=set(); out=[]
@@ -354,7 +356,7 @@ nav.tabs{{display:none}}
 <p class="sub">Evacuation <b>orders</b> (leave now):</p>
 <div class="zones" id="zones">{''.join(f'<span>{html.escape(z)}</span>' for z in zones)}</div><p class="sub" id="zonesnote">Loading live zone status from the county layer…</p>
 {('<p class="sub"><b>Road and facility closures:</b> '+' · '.join(html.escape(c) for c in facts.get('closures',[]))+'</p>') if facts.get('closures') else ''}
-{('<p class="sub"><b>Fire perimeter:</b> the solid red area on the map is the FIRIS aircraft-mapped perimeter from '+html.escape(datetime.datetime.fromisoformat(facts['front_time']).strftime('%-I:%M %p'))+' PT, mirrored from Watch Duty. Preliminary; it does not show which homes are damaged.</p>') if perim else ''}
+{('<p class="sub"><b>Fire perimeter:</b> the solid red area on the map is the '+html.escape(_psrc_label)+' perimeter from '+html.escape(datetime.datetime.fromisoformat(facts['front_time']).strftime('%-I:%M %p'))+' PT, mirrored from Watch Duty. Preliminary; it does not show which homes are damaged.</p>') if perim else ''}
 <p class="sub">Per radio traffic at 1:02 PM: all streets off Camino Las Ramblas down to I-5 and around to the San Juan dump. The red and yellow zones on the map are the live county evacuation areas.</p>
 </section>
 <section>
@@ -430,7 +432,7 @@ let zoneStatus={{}};const spreadLayer=L.layerGroup().addTo(map);const photoLayer
 const OVR_ORDER={jss(facts.get('order_zones',{}))},OVR_WARN={jss(facts.get('warning_zones',{}))};
 const norm=z=>String(z||'').replace(/\\s+/g,'').toUpperCase();
 function effType(p){{const z=norm(p.Evac_Area),t=p.Evac_Type||'';if(/lifted/i.test(t))return t;if(/order/i.test(t))return t;const o=Object.keys(OVR_ORDER).find(k=>norm(k)===z);if(o)return 'Evacuation Order (per '+OVR_ORDER[o]+')';if(/warning/i.test(t))return t;const w=Object.keys(OVR_WARN).find(k=>norm(k)===z);if(w)return 'Evacuation Warning (per '+OVR_WARN[w]+')';return t;}}
-L.control.layers({{'Satellite':sat,'Street map':street}},{{'Fire perimeter (FIRIS)':perimLayer,'County evacuation zones (live)':zoneLayer,'Wind spread guide (not a forecast)':spreadLayer,'Photos (Watch Duty users)':photoLayer,'Wind stations (NWS)':stnLayer,'Shelters and animal shelters':shelterLayer,'Posts by street':postLayer,'Road closures':closureLayer,'Streets':gl,'Radio-traffic sketch':evacL}},{{collapsed:true,position:'topright'}}).addTo(map);
+L.control.layers({{'Satellite':sat,'Street map':street}},{{'Fire perimeter ({_psrc})':perimLayer,'County evacuation zones (live)':zoneLayer,'Wind spread guide (not a forecast)':spreadLayer,'Photos (Watch Duty users)':photoLayer,'Wind stations (NWS)':stnLayer,'Shelters and animal shelters':shelterLayer,'Posts by street':postLayer,'Road closures':closureLayer,'Streets':gl,'Radio-traffic sketch':evacL}},{{collapsed:true,position:'topright'}}).addTo(map);
 
 async function loadZones(){{try{{
  const u=ZL+'?where=1%3D1&geometry=-117.75,33.40,-117.55,33.55&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=Evac_Area,Evac_Type,City,Area_Desc&returnGeometry=true&outSR=4326&f=geojson&_='+Date.now();
