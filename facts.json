@@ -157,6 +157,10 @@
   [
    "Oct 17 6:01 PM",
    "ALL EVACUATION ORDERS LIFTED. The OC Public Works map lifted the last four zones (SCL12, SJC04, SJC05 and SJC 10 A) at 6:01 PM; Watch Duty's order list cleared at 6:10 PM. Residents of every zone may return home. The burned footprint is marked 'Norte Fire - Unsafe Area' and remains closed. Drive slowly, expect crews and hoses, follow deputies. Fire still 5% contained at 570 acres; crews stay on the lines."
+  ],
+  [
+   "Oct 17 6:12 PM",
+   "Orange County Sheriff's Department confirms: all evacuation orders lifted (SCL12, SJC04, SJC05 and SJC 10 A released; SCL13 and SJC 10 B were released earlier). Via La Mirada remains closed to vehicle traffic north of Esperanza for OCFA access. The burn scar is an active fire hazard and closed until further notice. Containment up to 25% per OCFA."
   ]
  ],
  "order_zones": {},
@@ -189,11 +193,13 @@
   "label": "CBS LA live coverage"
  },
  "closures": [
-  "Avenida La Pata southbound closed between Ortega Hwy and Avenida Vista Hermosa (requested 1:54 PM)",
-  "Nine Capistrano Unified schools dismissing early (check school messages)",
-  "I-5 hard closure requested from San Juan Creek Rd to Camino De Los Mares (radio traffic 1:29 PM)",
-  "I-5 closed both directions south of San Clemente (Henderson Fire, Camp Pendleton)",
-  "Prima Deshecha Landfill closed"
+  "Via La Mirada closed to vehicles north of Esperanza for OCFA access (OCSD 6:12 PM Oct 17)",
+  "Burn scar ('Norte Fire - Unsafe Area' on the county map) closed until further notice (OCSD 6:12 PM Oct 17)",
+  "Oct 16: Avenida La Pata southbound closed between Ortega Hwy and Avenida Vista Hermosa (requested 1:54 PM) (not re-confirmed since repopulation; expect reopened)",
+  "Oct 16: Nine Capistrano Unified schools dismissing early (check school messages) (not re-confirmed since repopulation; expect reopened)",
+  "Oct 16: I-5 hard closure requested from San Juan Creek Rd to Camino De Los Mares (radio traffic 1:29 PM) (not re-confirmed since repopulation; expect reopened)",
+  "Oct 16: I-5 closed both directions south of San Clemente (Henderson Fire, Camp Pendleton) (not re-confirmed since repopulation; expect reopened)",
+  "Oct 16: Prima Deshecha Landfill closed (not re-confirmed since repopulation; expect reopened)"
  ],
  "shelters": [
   {
@@ -255,6 +261,6 @@
  ],
  "repopulated": {
   "time": "at 6:01 PM Oct 17",
-  "note": "The OC Public Works map lifted the last four zones (SCL12, SJC04, SJC05, SJC 10 A) at 6:01 PM and Watch Duty's order list cleared at 6:10 PM."
+  "note": "Confirmed by the Orange County Sheriff's Department at 6:12 PM: no evacuation orders associated with the Norte Fire remain in effect. Via La Mirada stays closed to vehicles north of Esperanza so OCFA engines can keep working."
  }
 }
