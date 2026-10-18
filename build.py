@@ -11,6 +11,7 @@ PT = datetime.timezone(datetime.timedelta(hours=-7))
 osm = json.load(open('osm.json'))['elements']
 posts = json.load(open('posts_store.json'))
 facts = json.load(open('facts.json'))
+REPOP=facts.get('repopulated') or None
 try: wd = json.load(open('wd.json'))
 except Exception: wd = {'event':{},'data':{},'reports':[],'photos':[]}
 def J(o): return json.dumps(o).replace('<','\\u003c').replace('>','\\u003e').replace('&','\\u0026')
@@ -333,6 +334,7 @@ nav.tabs{{display:none}}
 </style></head><body class="tab-map">
 <div id="stale" hidden style="background:#3a2d08;color:#ffd45c;padding:8px 16px;font-size:13px;border-bottom:1px solid #8a6a12"></div>
 <header><h1><b>Norte Fire</b> evacuation street map</h1><span class="upd">Updated {built}</span></header>
+{('<div class="notice" style="background:#0f2a1a;border:1px solid #1f6b3a;color:#bff0cf;padding:10px 16px;font-size:14px;line-height:1.45"><b style="color:#7fe0a3">All evacuation orders lifted '+html.escape(REPOP.get('time',''))+'.</b> Residents may return home. '+html.escape(REPOP.get('note',''))+' Burned ground is still closed where the county map shows an Unsafe Area. Drive slowly, watch for crews and hoses, and follow deputies. The spread guide and wind layers are turned off on this page because the fire is no longer moving toward homes.</div>') if REPOP else ''}
 <div class="layout">
 <a href="#leave" class="skip" style="position:absolute;left:-9999px">Skip map</a><div id="map" aria-label="Interactive map. The same information is listed in text in the panel."></div>
 <aside class="ic-dark">
@@ -369,7 +371,8 @@ nav.tabs{{display:none}}
 <p class="sub">Forecast: NWS San Diego hourly grid. Observations: NWS stations. Temperatures {wind['obs'][0]['tempF'] if wind['obs'] and wind['obs'][0].get('tempF') else '--'}°F, humidity {wind['obs'][0]['rh'] if wind['obs'] and wind['obs'][0].get('rh') else '--'}%.</p>
 </section>
 {guidance2}
-<section>
+{'<style>#spreadsec{display:none}</style>' if REPOP else ''}
+<section id="spreadsec">
 <h2><span class="hi" data-ic="origin" data-col="#f76b15"></span>Wind-driven spread guide (not a forecast) <small style="text-transform:none;letter-spacing:0;font-weight:500">· <a href="methodology.html">how it is computed, with the math</a></small></h2>
 <div class="stats" id="spreadstats"><div class="stat"><b>--</b><span>rough head speed, mph</span></div><div class="stat"><b>--</b><span>rough 1 hr run, miles</span></div><div class="stat"><b>--</b><span>rough flame length, ft</span></div></div>
 <p class="sub" id="spreadnote">Computing from live wind…</p>
@@ -429,6 +432,7 @@ const ZL='https://services.arcgis.com/UXmFoWC7yDHcDN5Q/arcgis/rest/services/Know
 const zoneLayer=L.geoJSON(null,{{style:f=>{{const t=effType(f.properties);const satW=(typeof SAT!=='undefined'&&SAT)?1:0;const o=/order/i.test(t),w=/warning/i.test(t);return{{color:o?'#e5484d':w?'#f5b400':(satW?'#cbd5e1':'#6b7684'),weight:(o||w?2:1)+satW,fillColor:o?'#e5484d':w?'#f5b400':'#000',fillOpacity:o?.22:w?.18:0,dashArray:o||w?null:'3 4'}};}},
  onEachFeature:(f,l)=>{{const p=f.properties;l.bindTooltip(`<b>${{esc(p.Evac_Area)}}</b><br>${{esc(effType(p))}}`,{{className:'lbl',sticky:true}});}}}}).addTo(map);
 let zoneStatus={{}};const spreadLayer=L.layerGroup().addTo(map);const photoLayer=L.layerGroup().addTo(map);const stnLayer=L.layerGroup().addTo(map);const shelterLayer=L.layerGroup().addTo(map);const postLayer=L.layerGroup().addTo(map);const closureLayer=L.layerGroup().addTo(map);const perimLayer=L.layerGroup().addTo(map);
+const REPOP={jss(bool(REPOP))};if(REPOP){{map.removeLayer(spreadLayer);map.removeLayer(stnLayer);}}
 const OVR_ORDER={jss(facts.get('order_zones',{}))},OVR_WARN={jss(facts.get('warning_zones',{}))};
 const norm=z=>String(z||'').replace(/\\s+/g,'').toUpperCase();
 function effType(p){{const z=norm(p.Evac_Area),t=p.Evac_Type||'';if(/lifted/i.test(t))return t;if(/order/i.test(t))return t;const o=Object.keys(OVR_ORDER).find(k=>norm(k)===z);if(o)return 'Evacuation Order (per '+OVR_ORDER[o]+')';if(/warning/i.test(t))return t;const w=Object.keys(OVR_WARN).find(k=>norm(k)===z);if(w)return 'Evacuation Warning (per '+OVR_WARN[w]+')';return t;}}
@@ -577,7 +581,7 @@ try:
     d.rectangle([0,H-130,W,H],fill=(11,13,16,230))
     d.text((40,H-112),'Norte Fire',font=font(50,True),fill=(229,72,77))
     d.text((40+d.textlength('Norte Fire',font=font(50,True))+16,H-104),'evacuation street map',font=font(38),fill=(232,235,239))
-    d.text((40,H-46),f"San Juan Capistrano and San Clemente  |  {facts['acres']} acres  |  {facts['containment']} contained  |  updated {now.strftime('%-I:%M %p')} PT",font=font(21),fill=(139,149,163))
+    d.text((40,H-46),f"San Juan Capistrano and San Clemente  |  {facts['acres']} acres  |  {facts['containment']} contained  |  {'evacuation orders LIFTED' if REPOP else 'updated'} {now.strftime('%-I:%M %p')} PT",font=font(21),fill=(139,149,163))
     # legend chip top-right
     rows=[G_ORIGIN,G_IMPACT,G_THREAT,G_ORDER]; bw=270; bh=26*len(rows)+20
     d.rounded_rectangle([W-40-bw,28,W-40,28+bh],radius=10,fill=(11,13,16,215))

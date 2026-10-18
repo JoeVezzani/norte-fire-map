@@ -6,21 +6,21 @@
 <meta property="og:type" content="website"><meta property="og:site_name" content="Norte Fire Map">
 <meta property="og:title" content="Norte Fire: where the evacuation streets are">
 <meta property="og:description" content="Norte Fire, San Clemente and San Juan Capistrano: where Camino Las Ramblas, Via La Mirada, Avenida Calita and the other streets in the evacuation updates are, with official zone links.">
-<meta property="og:url" content="https://joevezzani.github.io/norte-fire-map/"><meta property="og:image" content="https://joevezzani.github.io/norte-fire-map/og.png?v=1792285500">
+<meta property="og:url" content="https://joevezzani.github.io/norte-fire-map/"><meta property="og:image" content="https://joevezzani.github.io/norte-fire-map/og.png?v=1792285549">
 <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Norte Fire: where the evacuation streets are">
-<meta name="twitter:description" content="Norte Fire, San Clemente and San Juan Capistrano: where Camino Las Ramblas, Via La Mirada, Avenida Calita and the other streets in the evacuation updates are, with official zone links."><meta name="twitter:image" content="https://joevezzani.github.io/norte-fire-map/og.png?v=1792285500">
+<meta name="twitter:description" content="Norte Fire, San Clemente and San Juan Capistrano: where Camino Las Ramblas, Via La Mirada, Avenida Calita and the other streets in the evacuation updates are, with official zone links."><meta name="twitter:image" content="https://joevezzani.github.io/norte-fire-map/og.png?v=1792285549">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://platform.twitter.com https://cdn.syndication.twimg.com; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com https://platform.twitter.com; font-src https://fonts.gstatic.com; img-src * data: blob:; connect-src https://services.arcgis.com https://geocode.arcgis.com https://api.weather.gov https://air-quality-api.open-meteo.com https://platform.twitter.com https://cdn.syndication.twimg.com https://api.twitter.com https://syndication.twitter.com; frame-src https://www.youtube.com https://platform.twitter.com https://syndication.twitter.com; child-src https://www.youtube.com https://platform.twitter.com https://syndication.twitter.com; base-uri 'self'; form-action 'self'">
 <meta name="theme-color" content="#0b0d10">
 <link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="manifest" href="site.webmanifest">
 <meta name="apple-mobile-web-app-title" content="Norte Fire"><meta name="geo.region" content="US-CA"><meta name="geo.placename" content="San Juan Capistrano, California">
-<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "name": "Norte Fire Map", "url": "https://joevezzani.github.io/norte-fire-map/", "description": "Norte Fire, San Clemente and San Juan Capistrano: where Camino Las Ramblas, Via La Mirada, Avenida Calita and the other streets in the evacuation updates are, with official zone links.", "dateModified": "2026-10-17T18:05:00.523123-07:00", "about": {"@type": "Event", "name": "Norte Fire", "startDate": "2026-10-16T11:30:00-07:00", "location": {"@type": "Place", "name": "San Clemente / San Juan Capistrano, Orange County, CA"}}}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "name": "Norte Fire Map", "url": "https://joevezzani.github.io/norte-fire-map/", "description": "Norte Fire, San Clemente and San Juan Capistrano: where Camino Las Ramblas, Via La Mirada, Avenida Calita and the other streets in the evacuation updates are, with official zone links.", "dateModified": "2026-10-17T18:05:49.537379-07:00", "about": {"@type": "Event", "name": "Norte Fire", "startDate": "2026-10-16T11:30:00-07:00", "location": {"@type": "Place", "name": "San Clemente / San Juan Capistrano, Orange County, CA"}}}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="spread.js?v=1792285500"></script>
-<script src="icons.js?v=1792285500"></script>
+<script src="spread.js?v=1792285549"></script>
+<script src="icons.js?v=1792285549"></script>
 <style>
 :root{--bg:#0b0d10;--panel:#12151a;--card:#171b21;--fg:#e8ebef;--muted:#8b95a3;--line:#242a33;--red:#e5484d;--orange:#f76b15;--amber:#f5b400;--gray:#7c8a99;--hdr:56px;--tabs:48px}
 *{box-sizing:border-box}html,body{height:100%}
@@ -84,6 +84,7 @@ nav.tabs{display:none}
 </style></head><body class="tab-map">
 <div id="stale" hidden style="background:#3a2d08;color:#ffd45c;padding:8px 16px;font-size:13px;border-bottom:1px solid #8a6a12"></div>
 <header><h1><b>Norte Fire</b> evacuation street map</h1><span class="upd">Updated Oct 17, 2026, 6:05 PM PT</span></header>
+
 <div class="layout">
 <a href="#leave" class="skip" style="position:absolute;left:-9999px">Skip map</a><div id="map" aria-label="Interactive map. The same information is listed in text in the panel."></div>
 <aside class="ic-dark">
@@ -203,7 +204,8 @@ nav.tabs{display:none}
 </ul>
 </section>
 
-<section>
+
+<section id="spreadsec">
 <h2><span class="hi" data-ic="origin" data-col="#f76b15"></span>Wind-driven spread guide (not a forecast) <small style="text-transform:none;letter-spacing:0;font-weight:500">· <a href="methodology.html">how it is computed, with the math</a></small></h2>
 <div class="stats" id="spreadstats"><div class="stat"><b>--</b><span>rough head speed, mph</span></div><div class="stat"><b>--</b><span>rough 1 hr run, miles</span></div><div class="stat"><b>--</b><span>rough flame length, ft</span></div></div>
 <p class="sub" id="spreadnote">Computing from live wind…</p>
@@ -492,6 +494,7 @@ const ZL='https://services.arcgis.com/UXmFoWC7yDHcDN5Q/arcgis/rest/services/Know
 const zoneLayer=L.geoJSON(null,{style:f=>{const t=effType(f.properties);const satW=(typeof SAT!=='undefined'&&SAT)?1:0;const o=/order/i.test(t),w=/warning/i.test(t);return{color:o?'#e5484d':w?'#f5b400':(satW?'#cbd5e1':'#6b7684'),weight:(o||w?2:1)+satW,fillColor:o?'#e5484d':w?'#f5b400':'#000',fillOpacity:o?.22:w?.18:0,dashArray:o||w?null:'3 4'};},
  onEachFeature:(f,l)=>{const p=f.properties;l.bindTooltip(`<b>${esc(p.Evac_Area)}</b><br>${esc(effType(p))}`,{className:'lbl',sticky:true});}}).addTo(map);
 let zoneStatus={};const spreadLayer=L.layerGroup().addTo(map);const photoLayer=L.layerGroup().addTo(map);const stnLayer=L.layerGroup().addTo(map);const shelterLayer=L.layerGroup().addTo(map);const postLayer=L.layerGroup().addTo(map);const closureLayer=L.layerGroup().addTo(map);const perimLayer=L.layerGroup().addTo(map);
+const REPOP=false;if(REPOP){map.removeLayer(spreadLayer);map.removeLayer(stnLayer);}
 const OVR_ORDER={},OVR_WARN={};
 const norm=z=>String(z||'').replace(/\s+/g,'').toUpperCase();
 function effType(p){const z=norm(p.Evac_Area),t=p.Evac_Type||'';if(/lifted/i.test(t))return t;if(/order/i.test(t))return t;const o=Object.keys(OVR_ORDER).find(k=>norm(k)===z);if(o)return 'Evacuation Order (per '+OVR_ORDER[o]+')';if(/warning/i.test(t))return t;const w=Object.keys(OVR_WARN).find(k=>norm(k)===z);if(w)return 'Evacuation Warning (per '+OVR_WARN[w]+')';return t;}
@@ -587,7 +590,7 @@ document.getElementById('addr').addEventListener('submit',async e=>{e.preventDef
   await checkPoint(+c.location.y,+c.location.x,c.address);}catch(err){show('','Lookup failed','Could not reach the geocoder or county layer. Use the OC zone map link below.');}});
 document.getElementById('geo').onclick=()=>{if(!navigator.geolocation)return show('','Location unavailable','');show('','Getting your location…','');navigator.geolocation.getCurrentPosition(p=>checkPoint(p.coords.latitude,p.coords.longitude,'Your current location'),()=>show('','Location permission denied','Type your address instead.'),{enableHighAccuracy:true,timeout:10000});};
 document.querySelectorAll('h2 .hi, nav.tabs .hi, .notice .hi').forEach(e=>e.innerHTML=ic(e.dataset.ic,e.dataset.col));
-const BUILT_TS=1792285500;function staleCheck(){const m=Math.round((Date.now()/1000-BUILT_TS)/60);const el=document.getElementById('stale');if(m>45){el.hidden=false;el.innerHTML=`This page has not been updated in over ${m} minutes. Check <a style="color:#ffd45c" href="https://www.ocfa.org/" target="_blank" rel="noopener">OCFA</a> and <a style="color:#ffd45c" href="https://protect.genasys.com/search" target="_blank" rel="noopener">Genasys Protect</a> for current orders.`;}else el.hidden=true;}staleCheck();setInterval(staleCheck,60000);
+const BUILT_TS=1792285549;function staleCheck(){const m=Math.round((Date.now()/1000-BUILT_TS)/60);const el=document.getElementById('stale');if(m>45){el.hidden=false;el.innerHTML=`This page has not been updated in over ${m} minutes. Check <a style="color:#ffd45c" href="https://www.ocfa.org/" target="_blank" rel="noopener">OCFA</a> and <a style="color:#ffd45c" href="https://protect.genasys.com/search" target="_blank" rel="noopener">Genasys Protect</a> for current orders.`;}else el.hidden=true;}staleCheck();setInterval(staleCheck,60000);
 function tabs(t){document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));}
 document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>{document.body.className='tab-'+b.dataset.t;tabs(b.dataset.t);document.getElementById('vp').setAttribute('content',b.dataset.t==='map'?'width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover':'width=device-width,initial-scale=1,viewport-fit=cover');if(b.dataset.t==='map')setTimeout(()=>map.invalidateSize(),50);if(window.twttr&&twttr.widgets&&b.dataset.t==='posts')twttr.widgets.load();});
 </script>
