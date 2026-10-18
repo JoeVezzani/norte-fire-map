@@ -36,8 +36,6 @@ for z in _wd_orders: facts.setdefault('order_zones',{}).setdefault(z,'Watch Duty
 _wd_warn=[z.strip() for z in str(wd.get('data',{}).get('evacuation_warnings') or '').split(',') if _zrx.match(z.strip())]
 for z in _wd_warn: facts.setdefault('warning_zones',{}).setdefault(z,'Watch Duty / OCFA')
 # county "Evacuation Lifted" is an affirmative downgrade: it beats the OCFA/Watch Duty order overrides
-_psrc=(perim['features'][0]['properties'].get('source') if perim else None) or 'FIRIS'
-_psrc_label={'FIRIS':'FIRIS aircraft-mapped','NIFC':'NIFC (federal incident) mapped'}.get(_psrc,_psrc+' mapped')
 lifted_zones={}
 try:
     _lu='https://services.arcgis.com/UXmFoWC7yDHcDN5Q/arcgis/rest/services/Know_Your_Evacuation_Areas_OC_VIew/FeatureServer/0/query?where=Evac_Type%3D%27Evacuation%20Lifted%27&outFields=Evac_Area,Evac_Type&returnGeometry=false&f=json'
@@ -59,6 +57,8 @@ try:
     perim = json.load(open('perimeter.geojson'))
     if not perim.get('features'): perim=None
 except Exception: perim = None
+_psrc=(perim['features'][0]['properties'].get('source') if perim else None) or 'FIRIS'
+_psrc_label={'FIRIS':'FIRIS aircraft-mapped','NIFC':'NIFC (federal incident) mapped'}.get(_psrc,_psrc+' mapped')
 try: wind = json.load(open('wind.json'))
 except Exception: wind = {'obs':[],'hourly':[],'fetched':''}
 # street mentions in the last 90 minutes of posts
