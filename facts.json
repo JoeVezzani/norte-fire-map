@@ -153,14 +153,13 @@
   [
    "Oct 17 12:01 PM",
    "Evacuation orders LIFTED for zones SCL13 (San Clemente) and SJC 10 B (San Juan Capistrano), confirmed by the Orange County Sheriff's Department at 12:15 PM. SJC 10 B is the Stallion Ridge community, San Juan Hills High School and the landfill off La Pata. Residents may return; use caution, crews are still working and some roads may stay restricted. SCL12, SJC04, SJC05 and SJC 10 A remain under Evacuation Order."
+  ],
+  [
+   "Oct 17 6:01 PM",
+   "ALL EVACUATION ORDERS LIFTED. The OC Public Works map lifted the last four zones (SCL12, SJC04, SJC05 and SJC 10 A) at 6:01 PM; Watch Duty's order list cleared at 6:10 PM. Residents of every zone may return home. The burned footprint is marked 'Norte Fire - Unsafe Area' and remains closed. Drive slowly, expect crews and hoses, follow deputies. Fire still 5% contained at 570 acres; crews stay on the lines."
   ]
  ],
- "order_zones": {
-  "SJC04": "OCFA 1:04 PM",
-  "SJC05": "OCFA 1:04 PM",
-  "SCL12": "OCFA 1:04 PM",
-  "SJC 10 A": "OCFA 1:04 PM (split 11:05 AM)"
- },
+ "order_zones": {},
  "warning_zones": {},
  "front": [
   [
@@ -253,5 +252,9 @@
    "lng": -117.58411,
    "note": "Accepting pets from San Clemente and San Juan Capistrano evacuees. Intake until 7 PM, reopens 7 AM."
   }
- ]
+ ],
+ "repopulated": {
+  "time": "at 6:01 PM Oct 17",
+  "note": "The OC Public Works map lifted the last four zones (SCL12, SJC04, SJC05, SJC 10 A) at 6:01 PM and Watch Duty's order list cleared at 6:10 PM."
+ }
 }
