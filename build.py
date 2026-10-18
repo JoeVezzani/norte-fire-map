@@ -58,7 +58,8 @@ try:
     perim = json.load(open('perimeter.geojson'))
     if not perim.get('features'): perim=None
 except Exception: perim = None
-_psrc=(perim['features'][0]['properties'].get('source') if perim else None) or 'FIRIS'
+_psrc=str((perim['features'][0]['properties'].get('source') if perim else None) or 'FIRIS')
+if not re.fullmatch(r'[A-Za-z0-9 ._-]{1,24}',_psrc): _psrc='FIRIS'
 _psrc_label={'FIRIS':'FIRIS aircraft-mapped','NIFC':'NIFC (federal incident) mapped'}.get(_psrc,_psrc+' mapped')
 try: wind = json.load(open('wind.json'))
 except Exception: wind = {'obs':[],'hourly':[],'fetched':''}
