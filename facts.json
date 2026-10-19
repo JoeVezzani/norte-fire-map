@@ -177,6 +177,10 @@
   [
    "Oct 19 9:10 AM",
    "OCFA: containment up to 75% at 570 acres. All evacuation orders remain lifted; the burn scar stays closed."
+  ],
+  [
+   "Oct 19 1:35 PM",
+   "Live updates on this page ended. Final status: 570 acres, 75% contained (OCFA, 9:10 AM); all evacuation orders lifted since 6:01 PM Oct 17; the burn scar stays closed where the county map shows an Unsafe Area. Follow @OCFireAuthority for the final containment report."
   ]
  ],
  "order_zones": {},
@@ -278,5 +282,9 @@
  "repopulated": {
   "time": "at 6:01 PM Oct 17",
   "note": "Confirmed by the Orange County Sheriff's Department at 6:12 PM: no evacuation orders associated with the Norte Fire remain in effect. Via La Mirada stays closed to vehicles north of Esperanza so OCFA engines can keep working."
+ },
+ "frozen": {
+  "time": "1:35 PM Oct 19",
+  "note": "The map, the final NIFC perimeter, the county zone statuses, the timeline and the social posts are kept here as a record of the fire."
  }
 }
