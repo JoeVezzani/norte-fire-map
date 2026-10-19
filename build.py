@@ -12,6 +12,7 @@ osm = json.load(open('osm.json'))['elements']
 posts = json.load(open('posts_store.json'))
 facts = json.load(open('facts.json'))
 REPOP=facts.get('repopulated') or None
+FROZEN=facts.get('frozen') or None
 try: wd = json.load(open('wd.json'))
 except Exception: wd = {'event':{},'data':{},'reports':[],'photos':[]}
 def J(o): return json.dumps(o).replace('<','\\u003c').replace('>','\\u003e').replace('&','\\u0026')
@@ -248,18 +249,19 @@ def _k(t):
 timeline = ''.join(f'<li><time>{t}</time><span>{html.escape(s)}</span></li>' for t,s in sorted(tl_all, key=lambda x:-_k(x[0])))
 zones = facts['zones']
 desc = f"Norte Fire, San Clemente and San Juan Capistrano: where Camino Las Ramblas, Via La Mirada, Avenida Calita and the other streets in the evacuation updates are, with official zone links."
+if FROZEN: desc='Archive of the Norte Fire (Oct 16-19, 2026): final perimeter, evacuation zone statuses, timeline and posts for San Juan Capistrano and San Clemente.'
 
 page = f'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" id="vp" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>Norte Fire Map: Evacuation Streets in San Juan Capistrano and San Clemente</title>
+<title>Norte Fire Map{' (Archive)' if FROZEN else ''}: Evacuation Streets in San Juan Capistrano and San Clemente</title>
 <meta name="description" content="{desc}">
 <link rel="canonical" href="{SITE}">
 <meta property="og:type" content="website"><meta property="og:site_name" content="Norte Fire Map">
-<meta property="og:title" content="Norte Fire: where the evacuation streets are">
+<meta property="og:title" content="Norte Fire{' archive' if FROZEN else ''}: where the evacuation streets are">
 <meta property="og:description" content="{desc}">
 <meta property="og:url" content="{SITE}"><meta property="og:image" content="{SITE}og.png?v={int(now.timestamp())}">
 <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
-<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Norte Fire: where the evacuation streets are">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Norte Fire{' archive' if FROZEN else ''}: where the evacuation streets are">
 <meta name="twitter:description" content="{desc}"><meta name="twitter:image" content="{SITE}og.png?v={int(now.timestamp())}">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://platform.twitter.com https://cdn.syndication.twimg.com; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com https://platform.twitter.com; font-src https://fonts.gstatic.com; img-src * data: blob:; connect-src https://services.arcgis.com https://geocode.arcgis.com https://api.weather.gov https://air-quality-api.open-meteo.com https://platform.twitter.com https://cdn.syndication.twimg.com https://api.twitter.com https://syndication.twitter.com; frame-src https://www.youtube.com https://platform.twitter.com https://syndication.twitter.com; child-src https://www.youtube.com https://platform.twitter.com https://syndication.twitter.com; base-uri 'self'; form-action 'self'">
 <meta name="theme-color" content="#0b0d10">
@@ -334,8 +336,9 @@ nav.tabs{{display:none}}
 }}
 </style></head><body class="tab-map">
 <div id="stale" hidden style="background:#3a2d08;color:#ffd45c;padding:8px 16px;font-size:13px;border-bottom:1px solid #8a6a12"></div>
-<header><h1><b>Norte Fire</b> evacuation street map</h1><span class="upd">Updated {built}</span></header>
-{('<div class="notice" style="background:#0f2a1a;border:1px solid #1f6b3a;color:#bff0cf;padding:10px 16px;font-size:14px;line-height:1.45"><b style="color:#7fe0a3">All evacuation orders lifted '+html.escape(REPOP.get('time',''))+'.</b> Residents may return home. '+html.escape(REPOP.get('note',''))+' Burned ground is still closed where the county map shows an Unsafe Area. Drive slowly, watch for crews and hoses, and follow deputies. The spread guide and wind layers are turned off on this page because the fire is no longer moving toward homes.</div>') if REPOP else ''}
+<header><h1><b>Norte Fire</b> evacuation street map</h1><span class="upd">{'Archive. Final update ' if FROZEN else 'Updated '}{built}</span></header>
+{('<div class="notice" style="background:#101826;border:1px solid #2b3a55;color:#c7d2e6;padding:10px 16px;font-size:14px;line-height:1.45"><b style="color:#8ec5ff">This page is an archive.</b> The Norte Fire started the afternoon of Oct 16, 2026 off Camino Las Ramblas in San Juan Capistrano and burned '+html.escape(str(facts['acres']))+' acres toward San Clemente. All evacuation orders were lifted at 6:01 PM Oct 17; it was '+html.escape(str(facts['containment']))+' contained at the last official update. Live updates ended '+html.escape(FROZEN.get('time',''))+'. '+html.escape(FROZEN.get('note',''))+' The zone, wind and post feeds are frozen as a record. For anything current use the <a href="https://ocpw.maps.arcgis.com/apps/instant/lookup/index.html?appid=61efa4f48aaf42638d7fe59c395b4865" target="_blank" rel="noopener">OC evacuation zone map</a> and <a href="https://x.com/OCFireAuthority" target="_blank" rel="noopener">@OCFireAuthority</a>.</div>') if FROZEN else ''}
+{('<div class="notice" style="background:#0f2a1a;border:1px solid #1f6b3a;color:#bff0cf;padding:10px 16px;font-size:14px;line-height:1.45"><b style="color:#7fe0a3">All evacuation orders lifted '+html.escape(REPOP.get('time',''))+'.</b> Residents may return home. '+html.escape(REPOP.get('note',''))+' Burned ground is still closed where the county map shows an Unsafe Area. Drive slowly, watch for crews and hoses, and follow deputies. The spread guide and wind layers are turned off on this page because the fire is no longer moving toward homes.</div>') if (REPOP and not FROZEN) else ''}
 <div class="layout">
 <a href="#leave" class="skip" style="position:absolute;left:-9999px">Skip map</a><div id="map" aria-label="Interactive map. The same information is listed in text in the panel."></div>
 <aside class="ic-dark">
@@ -345,7 +348,7 @@ nav.tabs{{display:none}}
 <h2><span class="hi" data-ic="check" data-col="#1f8a4c"></span>Am I in an evacuation zone?</h2>
 <form id="addr" autocomplete="off" data-1p-ignore><input id="q" type="search" name="nf-address" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other" enterkeyhint="search" placeholder="Street address (e.g. 27000 Via De Agua)" aria-label="Street address"><button type="submit">Check</button><button type="button" id="geo" aria-label="Use my location to check my zone">Locate me</button></form>
 <div id="res" class="res" role="status" aria-live="polite" hidden></div>
-<p class="sub">Checks the live Orange County evacuation zone layer (OC Public Works). Zones are updated by OCFA and the Sheriff; this page just reads them.</p>
+<p class="sub">{'Archived: the address checker is off. Use the OC zone map link above for current status.' if FROZEN else 'Checks the live Orange County evacuation zone layer (OC Public Works). Zones are updated by OCFA and the Sheriff; this page just reads them.'}</p>
 </section>
 {('<section><h2><span class="hi" data-ic="shelter" data-col="#1f8a4c"></span>Evacuation shelters (OCFA)</h2><div class="links">'+''.join(f'<a href="https://maps.apple.com/?daddr={urllib.parse.quote(sh["addr"])}" target="_blank" rel="noopener">{html.escape(sh["name"])}<small>{html.escape(sh["addr"])}{(" · "+html.escape(sh["note"])) if sh.get("note") else ""} · directions</small></a>' for sh in facts.get('shelters',[]))+'</div><p class="sub">'+html.escape(facts.get('shelter_note','Opened by OCFA at 2:06 PM. Bring medicines, ID and chargers. Pets: check with the shelter before you arrive. If you need a ride, call 911.'))+'</p></section>') if facts.get('shelters') else ''}
 {('<section><h2><span class="hi" data-ic="school" data-col="#2f6feb"></span>Schools</h2><p class="sub" style="margin:0">'+html.escape(facts['schools']['note'])+'</p><div class="zones" style="margin-top:8px">'+''.join(f'<span style="background:#1a2233;border-color:#2c3e5a;color:#bcd3f5">{html.escape(x)}</span>' for x in facts['schools']['list'])+'</div></section>') if facts.get('schools') else ''}
@@ -357,7 +360,7 @@ nav.tabs{{display:none}}
 {('<p class="sub"><b>Injuries:</b> '+html.escape(facts['injuries'])+'</p>') if facts.get('injuries') else ''}
 {('<p class="sub"><b>OCFA public information hotline:</b> <a href="tel:'+html.escape(facts['hotline'].replace('-',''))+'">'+html.escape(facts['hotline'])+'</a></p>') if facts.get('hotline') else ''}
 <p class="sub">Evacuation <b>orders</b> (leave now):</p>
-<div class="zones" id="zones">{''.join(f'<span>{html.escape(z)}</span>' for z in zones)}</div><p class="sub" id="zonesnote">Loading live zone status from the county layer…</p>
+<div class="zones" id="zones">{''.join(f'<span>{html.escape(z)}</span>' for z in zones)}</div><p class="sub" id="zonesnote">{'Loading archived zone statuses…' if FROZEN else 'Loading live zone status from the county layer…'}</p>
 {('<p class="sub"><b>Road and facility closures:</b> '+' · '.join(html.escape(c) for c in facts.get('closures',[]))+'</p>') if facts.get('closures') else ''}
 {('<p class="sub"><b>Fire perimeter:</b> the solid red area on the map is the '+html.escape(_psrc_label)+' perimeter from '+html.escape(datetime.datetime.fromisoformat(facts['front_time']).strftime('%-I:%M %p'))+' PT, mirrored from Watch Duty. Preliminary; it does not show which homes are damaged.</p>') if perim else ''}
 <p class="sub">Per radio traffic at 1:02 PM: all streets off Camino Las Ramblas down to I-5 and around to the San Juan dump. The red and yellow zones on the map are the live county evacuation areas.</p>
@@ -383,7 +386,7 @@ nav.tabs{{display:none}}
 <section class="leg"><h2><span class="hi" data-ic="locate" data-col="#8ec5ff"></span>Streets in the updates</h2><div id="legend"></div><p class="sub">Tap a street to zoom to it.</p>
 {('<h3 style="margin-top:14px">Mentioned in posts, last 90 min</h3><ul class="mention">'+''.join(f'<li>{html.escape(n)}<small>{c}×'+('' if any(n.lower()==v[0].lower() for v in STREETS.values()) else ' · not on map yet')+'</small></li>' for n,c in mentions)+'</ul>') if mentions else ''}
 </section>
-<section><h2><span class="hi" data-ic="timeline" data-col="#7c8a99"></span>Timeline (PT, newest first)</h2><p class="sub" style="margin:0 0 8px">Sources rechecked every 5 minutes; last check {now.strftime("%-I:%M %p")} PT. Newest Watch Duty report {html.escape(wd_reports[0][0]) if wd_reports else "none"}. Includes OCFA and agency posts, Watch Duty reports, and automatic entries when acreage, containment, zones or the perimeter change.</p><ul class="tl">{timeline}</ul></section>
+<section><h2><span class="hi" data-ic="timeline" data-col="#7c8a99"></span>{'Final timeline' if FROZEN else 'Timeline'} (PT, newest first)</h2><p class="sub" style="margin:0 0 8px">{('Updates ended '+html.escape(FROZEN.get('time',''))+' PT. ') if FROZEN else ('Sources rechecked every 15 minutes; last check '+now.strftime("%-I:%M %p")+' PT. ')}Newest Watch Duty report {html.escape(wd_reports[0][0]) if wd_reports else "none"}. Includes OCFA and agency posts, Watch Duty reports, and automatic entries when acreage, containment, zones or the perimeter change.</p><ul class="tl">{timeline}</ul></section>
 <section><h2><span class="hi" data-ic="live" data-col="#e5484d"></span>Watch Duty incident reports <small style="text-transform:none;letter-spacing:0">· <a href="https://app.watchduty.org/i/124958" target="_blank" rel="noopener">open Watch Duty</a></small></h2>
 <ul class="tl">{''.join(f'<li><time>{t}</time><span>{html.escape(m)}</span></li>' for t,m in wd_reports) or '<li><span class="sub">No reports captured yet.</span></li>'}</ul>
 <p class="sub">Verified reports from Watch Duty's reporters, mirrored as of {html.escape(datetime.datetime.fromisoformat(wd['fetched']).strftime('%-I:%M %p') if wd.get('fetched') else '')} PT{(' · incident address: '+html.escape(wd['event'].get('address') or '')) if wd.get('event',{}).get('address') else ''}.</p></section>
@@ -433,22 +436,22 @@ const ZL='https://services.arcgis.com/UXmFoWC7yDHcDN5Q/arcgis/rest/services/Know
 const zoneLayer=L.geoJSON(null,{{style:f=>{{const t=effType(f.properties);const satW=(typeof SAT!=='undefined'&&SAT)?1:0;const o=/order/i.test(t),w=/warning/i.test(t);return{{color:o?'#e5484d':w?'#f5b400':(satW?'#cbd5e1':'#6b7684'),weight:(o||w?2:1)+satW,fillColor:o?'#e5484d':w?'#f5b400':'#000',fillOpacity:o?.22:w?.18:0,dashArray:o||w?null:'3 4'}};}},
  onEachFeature:(f,l)=>{{const p=f.properties;l.bindTooltip(`<b>${{esc(p.Evac_Area)}}</b><br>${{esc(effType(p))}}`,{{className:'lbl',sticky:true}});}}}}).addTo(map);
 let zoneStatus={{}};const spreadLayer=L.layerGroup().addTo(map);const photoLayer=L.layerGroup().addTo(map);const stnLayer=L.layerGroup().addTo(map);const shelterLayer=L.layerGroup().addTo(map);const postLayer=L.layerGroup().addTo(map);const closureLayer=L.layerGroup().addTo(map);const perimLayer=L.layerGroup().addTo(map);
-const REPOP={jss(bool(REPOP))};if(REPOP){{map.removeLayer(spreadLayer);map.removeLayer(stnLayer);}}
+const REPOP={jss(bool(REPOP))},FROZEN={jss(bool(FROZEN))};if(REPOP||FROZEN){{map.removeLayer(spreadLayer);map.removeLayer(stnLayer);}}
 const OVR_ORDER={jss(facts.get('order_zones',{}))},OVR_WARN={jss(facts.get('warning_zones',{}))};
 const norm=z=>String(z||'').replace(/\\s+/g,'').toUpperCase();
 function effType(p){{const z=norm(p.Evac_Area),t=p.Evac_Type||'';if(/lifted/i.test(t))return t;if(/order/i.test(t))return t;const o=Object.keys(OVR_ORDER).find(k=>norm(k)===z);if(o)return 'Evacuation Order (per '+OVR_ORDER[o]+')';if(/warning/i.test(t))return t;const w=Object.keys(OVR_WARN).find(k=>norm(k)===z);if(w)return 'Evacuation Warning (per '+OVR_WARN[w]+')';return t;}}
-L.control.layers({{'Satellite':sat,'Street map':street}},{{'Fire perimeter ({_psrc})':perimLayer,'County evacuation zones (live)':zoneLayer,'Wind spread guide (not a forecast)':spreadLayer,'Photos (Watch Duty users)':photoLayer,'Wind stations (NWS)':stnLayer,'Shelters and animal shelters':shelterLayer,'Posts by street':postLayer,'Road closures':closureLayer,'Streets':gl,'Radio-traffic sketch':evacL}},{{collapsed:true,position:'topright'}}).addTo(map);
+L.control.layers({{'Satellite':sat,'Street map':street}},{{'Fire perimeter ({_psrc})':perimLayer,'County evacuation zones ({'final' if FROZEN else 'live'})':zoneLayer,'Wind spread guide (not a forecast)':spreadLayer,'Photos (Watch Duty users)':photoLayer,'Wind stations (NWS)':stnLayer,'Shelters and animal shelters':shelterLayer,'Posts by street':postLayer,'Road closures':closureLayer,'Streets':gl,'Radio-traffic sketch':evacL}},{{collapsed:true,position:'topright'}}).addTo(map);
 
 async function loadZones(){{try{{
- const u=ZL+'?where=1%3D1&geometry=-117.75,33.40,-117.55,33.55&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=Evac_Area,Evac_Type,City,Area_Desc&returnGeometry=true&outSR=4326&f=geojson&_='+Date.now();
+ const u=FROZEN?'zones_final.geojson':ZL+'?where=1%3D1&geometry=-117.75,33.40,-117.55,33.55&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=Evac_Area,Evac_Type,City,Area_Desc&returnGeometry=true&outSR=4326&f=geojson&_='+Date.now();
  const r=await fetch(u);const g=await r.json();if(!g.features)throw 0;
  zoneLayer.clearLayers();zoneLayer.addData(g);zoneLayer.bringToBack();evacL.remove();
  const act=g.features.map(f=>({{...f.properties,Evac_Type:effType(f.properties)}})).filter(p=>/order|warning|lifted/i.test(p.Evac_Type));
  zoneStatus={{}};act.forEach(p=>zoneStatus[p.Evac_Area]=p.Evac_Type);
  const z=document.getElementById('zones');if(act.length){{z.innerHTML=act.sort((a,b)=>a.Evac_Area.localeCompare(b.Evac_Area)).map(p=>`<span class="${{/warning/i.test(p.Evac_Type)?'warn':/lifted/i.test(p.Evac_Type)?'lifted':''}}">${{esc(p.Evac_Area)}} · ${{/order/i.test(p.Evac_Type)?'ORDER':/warning/i.test(p.Evac_Type)?'WARNING':/lifted/i.test(p.Evac_Type)?'LIFTED':esc(p.Evac_Type)}}</span>`).join('');}}
- document.getElementById('zonesnote').textContent='County zone layer plus OCFA announcements, checked '+new Date().toLocaleTimeString([],{{hour:'numeric',minute:'2-digit'}})+'. Red = order (leave now), yellow = warning (be ready).';
+ document.getElementById('zonesnote').textContent=FROZEN?'Archived county zone statuses as of the final update. Green = order lifted, red = the closed burn scar (Unsafe Area).':'County zone layer plus OCFA announcements, checked '+new Date().toLocaleTimeString([],{{hour:'numeric',minute:'2-digit'}})+'. Red = order (leave now), yellow = warning (be ready).';
 }}catch(e){{document.getElementById('zonesnote').textContent='Could not reach the county zone layer; showing last known zones. Use the OC zone map link below.';}}}}
-loadZones();setInterval(loadZones,120000);
+loadZones();if(!FROZEN)setInterval(loadZones,120000);
 // ---- wind arrow (direction the wind is blowing TOWARD) + live NWS refresh
 const WIND={jss(wind['obs'][:1])};
 const WindCtl=L.Control.extend({{onAdd(){{const d=L.DomUtil.create('div','windarrow');d.id='windarrow';return d;}}}});new WindCtl({{position:'bottomleft'}}).addTo(map);
@@ -457,7 +460,7 @@ drawWind(WIND[0]);
 async function liveWind(){{try{{const r=await fetch('https://api.weather.gov/stations/F1327/observations/latest',{{headers:{{'Accept':'application/geo+json'}}}});const p=(await r.json()).properties;const v=k=>(p[k]||{{}}).value;if(v('windSpeed')==null)return;const o={{dir:v('windDirection'),mph:v('windSpeed')*0.621371,gust:(v('windGust')||0)*0.621371,name:'San Clemente Pier',time:p.timestamp}};drawWind(o);o.rh=WIND[0]&&WIND[0].rh;o.tempF=WIND[0]&&WIND[0].tempF;drawSpread(o);
  const w=document.querySelector('#windnow .w');if(w)w.innerHTML=`<b>${{Math.round(o.mph)}}<small> mph</small></b><span>${{o.gust?'gusts '+Math.round(o.gust)+' mph · ':''}}from ${{Math.round(o.dir)}}° · San Clemente Pier</span>`;
  document.getElementById('windnote').textContent='Observed '+new Date(o.time).toLocaleTimeString([],{{hour:'numeric',minute:'2-digit'}})+' at San Clemente Pier. Wind is pushing the fire '+(o.dir>=45&&o.dir<=135?'west/southwest toward I-5 and the coast':'downwind')+'.';}}catch(e){{}}}}
-liveWind();setInterval(liveWind,300000);
+if(!FROZEN){{liveWind();setInterval(liveWind,300000);}}else{{const wa=document.getElementById('windarrow');if(wa)wa.style.display='none';const wn=document.getElementById('windnote');if(wn)wn.textContent='Archived: the last observations before updates ended. Live wind is off.';}}
 // ---- posts pinned to the streets they mention
 const SP={J(street_posts)};
 Object.entries(SP).forEach(([name,list])=>{{const ls=groups[name];if(!ls||!list.length)return;const b=L.featureGroup(ls).getBounds();const c=b.getCenter();const vids=list.filter(p=>p.kind==='video').length;
@@ -482,10 +485,10 @@ function stnPopup(id,o){{const st=STN[id];return `<div style="font:13px Inter,sa
 function setStn(id,o){{const st=STN[id];if(!st||o.mph==null)return;if(stnMk[id]){{stnMk[id].setIcon(stnIcon(o));stnMk[id].setPopupContent(stnPopup(id,o));}}else{{stnMk[id]=L.marker(st.ll,{{icon:stnIcon(o),zIndexOffset:500}}).bindPopup(stnPopup(id,o)).bindTooltip(esc(st.n),{{className:'lbl',direction:'bottom',offset:[0,14]}}).addTo(stnLayer);}}}}
 Object.entries({J({o['id']:o for o in wind['obs']})}).forEach(([id,o])=>setStn(id,o));
 async function liveStations(){{for(const id of Object.keys(STN)){{try{{const r=await fetch(`https://api.weather.gov/stations/${{id}}/observations/latest`,{{headers:{{'Accept':'application/geo+json'}}}});const p=(await r.json()).properties;const v=k=>(p[k]||{{}}).value;if(v('windSpeed')==null)continue;setStn(id,{{dir:v('windDirection'),mph:v('windSpeed')*0.621371,gust:(v('windGust')||0)*0.621371||null,tempF:v('temperature')!=null?v('temperature')*9/5+32:null,rh:v('relativeHumidity'),time:p.timestamp}});}}catch(e){{}}}}}}
-liveStations();setInterval(liveStations,300000);
+if(!FROZEN){{liveStations();setInterval(liveStations,300000);}}
 async function liveAQ(){{try{{const r=await fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude=33.477&longitude=-117.661&current=pm2_5,us_aqi&timezone=America%2FLos_Angeles');const c=(await r.json()).current;const aqi=Math.round(c.us_aqi),cat=aqi<=50?'good':aqi<=100?'moderate':aqi<=150?'unhealthy for sensitive groups':aqi<=200?'unhealthy':aqi<=300?'very unhealthy':'hazardous';
  document.getElementById('aq').innerHTML=`<b>Air quality (regional model):</b> US AQI ${{aqi}}, ${{cat}}; PM2.5 ${{c.pm2_5}} µg/m³. This is a regional model estimate, not a smoke sensor. Downwind of the fire it is far worse: stay inside, close windows, set HVAC to recirculate, wear an N95 outdoors. <a href="https://fire.airnow.gov/" target="_blank" rel="noopener">AirNow fire and smoke map</a>`;}}catch(e){{document.getElementById('aq').innerHTML='<b>Air quality:</b> see the <a href="https://fire.airnow.gov/" target="_blank" rel="noopener">AirNow fire and smoke map</a>. Downwind of the fire: stay inside, recirculate HVAC, N95 outdoors.';}}}}
-liveAQ();setInterval(liveAQ,900000);
+if(!FROZEN){{liveAQ();setInterval(liveAQ,900000);}}
 // ---- FIRIS fire perimeter (via Watch Duty tiles)
 const PERIM={jss(perim) if perim else 'null'};
 if(PERIM){{const pl=L.geoJSON(PERIM,{{style:{{color:'#b91c1c',weight:2.5,fillColor:'#ef4444',fillOpacity:.28}}}}).addTo(perimLayer);pl.bindTooltip('Fire perimeter, '+esc(PERIM.features[0].properties.source)+' mapped '+esc(new Date(PERIM.features[0].properties.date.replace(' ','T')).toLocaleTimeString([],{{hour:'numeric',minute:'2-digit'}}))+' PT. Preliminary; a home inside is not necessarily damaged.',{{className:'lbl',sticky:true}});}}
@@ -509,7 +512,9 @@ drawSpread(WIND[0]||{{dir:95,mph:17,gust:30,rh:20,tempF:93}});
 // ---- address check
 const res=document.getElementById('res');let pin;
 function show(cls,title,body){{res.hidden=false;res.className='res '+cls;res.innerHTML=`<b>${{title}}</b>${{body}}`;if(cls)res.scrollIntoView({{block:'nearest',behavior:'smooth'}});}}
+const archivedMsg=()=>show('','This page is archived','The address checker is off. Check current status on the <a href="https://ocpw.maps.arcgis.com/apps/instant/lookup/index.html?appid=61efa4f48aaf42638d7fe59c395b4865" target="_blank" rel="noopener">OC zone map</a>.');
 async function checkPoint(lat,lon,label){{
+ if(FROZEN){{archivedMsg();return;}}
  label=esc(label);show('', 'Checking…', label);
  const u=ZL+`?geometry=${{lon}},${{lat}}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=Evac_Area,Evac_Type,City&returnGeometry=false&f=json&_=${{Date.now()}}`;
  const r=await fetch(u);const j=await r.json();
@@ -523,13 +528,13 @@ async function checkPoint(lat,lon,label){{
  else if(/lifted/i.test(t))show('ok','Zone '+p.Evac_Area+': evacuation LIFTED',`<span>We matched: <b>${{label||''}}</b></span><br>The OC Public Works map shows the order for this zone has been lifted and residents may return. Expect fire crews, downed lines and smoke; drive slowly and follow deputies' directions. If OCFA has not yet announced it, wait for their post before heading in.`);
  else show('ok','Zone '+p.Evac_Area+': no order or warning right now',`<span>We matched: <b>${{label||''}}</b></span><br>This fire is moving fast and zones can change within minutes. Get ready to leave anyway, and check again.`);
 }}
-document.getElementById('addr').addEventListener('submit',async e=>{{e.preventDefault();e.stopPropagation();const q=document.getElementById('q').value.trim();if(!q){{show('','Type a street address','Example: 27000 Via De Agua');return;}}document.getElementById('q').blur();show('','Finding address…',esc(q));
+document.getElementById('addr').addEventListener('submit',async e=>{{e.preventDefault();e.stopPropagation();if(FROZEN){{archivedMsg();return;}}const q=document.getElementById('q').value.trim();if(!q){{show('','Type a street address','Example: 27000 Via De Agua');return;}}document.getElementById('q').blur();show('','Finding address…',esc(q));
  try{{const g=await fetch('https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?f=json&maxLocations=1&outFields=Match_addr&countryCode=USA&location=-117.65,33.48&singleLine='+encodeURIComponent(q+(/ca\b|california/i.test(q)?'':', CA')));
   const c=((await g.json()).candidates||[])[0];if(!c||c.score<60){{show('','Address not found','Include street number, street and city, e.g. "27000 Via De Agua, San Juan Capistrano".');return;}}
   await checkPoint(+c.location.y,+c.location.x,c.address);}}catch(err){{show('','Lookup failed','Could not reach the geocoder or county layer. Use the OC zone map link below.');}}}});
-document.getElementById('geo').onclick=()=>{{if(!navigator.geolocation)return show('','Location unavailable','');show('','Getting your location…','');navigator.geolocation.getCurrentPosition(p=>checkPoint(p.coords.latitude,p.coords.longitude,'Your current location'),()=>show('','Location permission denied','Type your address instead.'),{{enableHighAccuracy:true,timeout:10000}});}};
+document.getElementById('geo').onclick=()=>{{if(FROZEN)return archivedMsg();if(!navigator.geolocation)return show('','Location unavailable','');show('','Getting your location…','');navigator.geolocation.getCurrentPosition(p=>checkPoint(p.coords.latitude,p.coords.longitude,'Your current location'),()=>show('','Location permission denied','Type your address instead.'),{{enableHighAccuracy:true,timeout:10000}});}};
 document.querySelectorAll('h2 .hi, nav.tabs .hi, .notice .hi').forEach(e=>e.innerHTML=ic(e.dataset.ic,e.dataset.col));
-const BUILT_TS={int(now.timestamp())};function staleCheck(){{const m=Math.round((Date.now()/1000-BUILT_TS)/60);const el=document.getElementById('stale');if(m>45){{el.hidden=false;el.innerHTML=`This page has not been updated in over ${{m}} minutes. Check <a style="color:#ffd45c" href="https://www.ocfa.org/" target="_blank" rel="noopener">OCFA</a> and <a style="color:#ffd45c" href="https://protect.genasys.com/search" target="_blank" rel="noopener">Genasys Protect</a> for current orders.`;}}else el.hidden=true;}}staleCheck();setInterval(staleCheck,60000);
+const BUILT_TS={int(now.timestamp())};function staleCheck(){{const m=Math.round((Date.now()/1000-BUILT_TS)/60);const el=document.getElementById('stale');if(m>45){{el.hidden=false;el.innerHTML=`This page has not been updated in over ${{m}} minutes. Check <a style="color:#ffd45c" href="https://www.ocfa.org/" target="_blank" rel="noopener">OCFA</a> and <a style="color:#ffd45c" href="https://protect.genasys.com/search" target="_blank" rel="noopener">Genasys Protect</a> for current orders.`;}}else el.hidden=true;}}if(!FROZEN){{staleCheck();setInterval(staleCheck,60000);}}
 function tabs(t){{document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));}}
 document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>{{document.body.className='tab-'+b.dataset.t;tabs(b.dataset.t);document.getElementById('vp').setAttribute('content',b.dataset.t==='map'?'width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover':'width=device-width,initial-scale=1,viewport-fit=cover');if(b.dataset.t==='map')setTimeout(()=>map.invalidateSize(),50);if(window.twttr&&twttr.widgets&&b.dataset.t==='posts')twttr.widgets.load();}});
 </script>
@@ -582,7 +587,7 @@ try:
     d.rectangle([0,H-130,W,H],fill=(11,13,16,230))
     d.text((40,H-112),'Norte Fire',font=font(50,True),fill=(229,72,77))
     d.text((40+d.textlength('Norte Fire',font=font(50,True))+16,H-104),'evacuation street map',font=font(38),fill=(232,235,239))
-    d.text((40,H-46),f"San Juan Capistrano and San Clemente  |  {facts['acres']} acres  |  {facts['containment']} contained  |  {'evacuation orders LIFTED' if REPOP else 'updated'} {now.strftime('%-I:%M %p')} PT",font=font(21),fill=(139,149,163))
+    d.text((40,H-46),f"San Juan Capistrano and San Clemente  |  {facts['acres']} acres  |  {facts['containment']} contained  |  {'ARCHIVE, final update' if FROZEN else 'evacuation orders LIFTED' if REPOP else 'updated'} {now.strftime('%-I:%M %p')} PT",font=font(21),fill=(139,149,163))
     # legend chip top-right
     rows=[G_ORIGIN,G_IMPACT,G_THREAT,G_ORDER]; bw=270; bh=26*len(rows)+20
     d.rounded_rectangle([W-40-bw,28,W-40,28+bh],radius=10,fill=(11,13,16,215))
